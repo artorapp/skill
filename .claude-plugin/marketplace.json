@@ -1,0 +1,13 @@
+{
+  "name": "artor",
+  "description": "Skills for Artor — publish, version, and share Next.js prototypes.",
+  "owner": { "name": "Alexandre Schrammel", "email": "alexandre.schrammel@gmail.com" },
+  "plugins": [
+    {
+      "name": "artor",
+      "source": "./artor",
+      "description": "artor CLI skill — publish, version, and share prototypes.",
+      "version": "0.1.0"
+    }
+  ]
+}
