@@ -7,6 +7,17 @@ uses pre-1.0 (0.x) semver — new user-visible capability bumps MINOR, fixes/doc
 After a version bump, users pull it with `claude plugin marketplace update artor && claude plugin
 update artor@artor` (update only fires on a version bump).
 
+## [0.4.1] - 2026-06-25
+
+### Added
+
+- Documented two previously-missing CLI commands in `SKILL.md` (new "CLI itself" table):
+  - **`artor update`** — self-updates the CLI; called out as the fix for an **HTTP 426 Upgrade
+    Required** response (server's minimum-CLI floor bumped).
+  - **`artor dev`** — retarget the CLI at a local/custom dashboard for development, with the
+    caveat that it **clears the stored token + default org** on every switch (`artor dev off`
+    restores production).
+
 ## [0.4.0] - 2026-06-25
 
 ### Changed

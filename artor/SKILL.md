@@ -86,6 +86,21 @@ workflows you'll drive most.
 | Manage org plans / entitlements    | `artor admin org list` / `admin plan get <orgId>` / `admin plan set <orgId> <free\|pro\|enterprise>` |
 | Platform share-link ceiling (days) | `artor admin share-ceiling get` / `set <days>`                                                       |
 
+**CLI itself**
+
+| Goal                                        | Command                                                       |
+| ------------------------------------------- | ------------------------------------------------------------- |
+| Self-update the CLI                         | `artor update`                                                |
+| Point the CLI at a local/custom dashboard   | `artor dev [--port N] [--url <http(s)>] [--verbose]` / `off` / `status` |
+
+- **`artor update`** self-updates the CLI (it detects how it was installed and runs the right
+  package-manager command; never silent). If a command fails with **HTTP 426 Upgrade Required**
+  ("Run `artor update`"), the server's minimum-CLI floor was bumped — run `artor update`, then retry.
+- **`artor dev`** is for **local development against a non-prod dashboard** — it retargets the CLI
+  and **clears the stored token + default org** on every switch (a token is environment-bound), so
+  you must `artor login` again afterward. `artor dev off` restores production. Don't run it in a
+  normal designer workflow; it will log you out of prod.
+
 ## Publishing notes
 
 - **`artor publish` builds on demand** — it rebuilds from clean by default, so you do **not**
