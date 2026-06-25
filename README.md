@@ -52,3 +52,13 @@ artor/
 └── SKILL.md                      # the skill
 skill.sh                          # convenience installer
 ```
+
+## Maintaining
+
+This repo is the **source of truth** — edit `artor/SKILL.md` directly here. The full release
+runbook (versioning, validation, verification, rollback) lives in **[DEPLOYING.md](DEPLOYING.md)**.
+
+The one rule worth repeating: bump the `version` in **both** `artor/.claude-plugin/plugin.json`
+**and** `.claude-plugin/marketplace.json` (to the same value) on every content change —
+`claude plugin update` only pulls on a version bump, so an unbumped push silently leaves installed
+users on the old skill.
