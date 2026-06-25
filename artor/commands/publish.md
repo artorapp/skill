@@ -12,7 +12,7 @@ artor status
 ```
 
 - If this dir isn't linked (`.artor/project.json` missing), run `artor init` first (or
-  `/artor:start` for the full first-run flow).
+  `/artor:start-here` for the full first-run flow).
 - If not signed in, `artor login`.
 
 ## 2. Generate a changelog (default, unless the user gave `--message`)

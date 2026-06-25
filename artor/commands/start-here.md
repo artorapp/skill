@@ -1,5 +1,5 @@
 ---
-description: First-run Artor walkthrough — checks the CLI, signs you in, links a project, ships your first version, and optionally shares it.
+description: First-run Artor walkthrough — installs or checks the artor CLI, signs you in, links a project, ships your first version, and optionally shares it.
 ---
 
 You are guiding a user through Artor for the **first time**. Walk them end-to-end, one step at a

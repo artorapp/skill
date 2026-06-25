@@ -38,7 +38,7 @@ these explicit slash commands:
 
 | Command                   | What it does                                                                       |
 | ------------------------- | ---------------------------------------------------------------------------------- |
-| `/artor:start`            | First-run walkthrough — checks the CLI, signs in, links, publishes, and shares.    |
+| `/artor:start-here`       | First-run walkthrough — installs/checks the CLI, signs in, links, publishes, shares.|
 | `/artor:publish`          | Build + ship the next version with a generated changelog; returns the preview URL. |
 | `/artor:share`            | Create / list / extend / turn off an anonymous view-only public link.              |
 | `/artor:address-comments` | Read reviewer comments → fix → re-publish → resolve the threads.                    |
@@ -64,7 +64,7 @@ artor/
 ├── .claude-plugin/plugin.json    # plugin manifest
 ├── SKILL.md                      # the auto-invoked knowledge skill
 └── commands/                     # explicit /artor:<name> slash commands
-    ├── start.md
+    ├── start-here.md
     ├── publish.md
     ├── share.md
     └── address-comments.md
