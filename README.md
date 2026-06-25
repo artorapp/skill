@@ -28,6 +28,24 @@ Or from inside Claude Code:
 /plugin install artor@artor
 ```
 
+> **Recommended:** use one of the Claude-plugin methods above. They install the **full plugin** —
+> the `/artor:artor` knowledge skill **and** the `/artor:*` slash commands.
+
+### Via the `skills` CLI (skills.sh)
+
+The skill is also discoverable through [skills.sh](https://skills.sh) (the Vercel-Labs skills
+directory) and installable with the cross-agent `skills` CLI:
+
+```bash
+npx skills add artorapp/skill
+```
+
+> **Caveat — knowledge skill only.** `npx skills` installs the `SKILL.md` knowledge skill into
+> your agent's skills directory; it does **not** carry the `/artor:*` slash commands or the plugin
+> manifest (those are Claude-plugin-specific). For the commands, install via the Claude plugin
+> marketplace above. skills.sh listings populate automatically from anonymous `skills add`
+> telemetry — there's no manual submission.
+
 Restart Claude Code (or start a new session). The skill then loads as `/artor:artor`, and the
 commands below become available.
 
