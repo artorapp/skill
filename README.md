@@ -45,8 +45,12 @@ these explicit slash commands:
 
 ## Update
 
+Refresh the marketplace cache first, then pull the new plugin version — `plugin update` only sees
+a new version after the marketplace is refreshed:
+
 ```bash
-claude plugin update artor
+claude plugin marketplace update artor
+claude plugin update artor@artor
 ```
 
 ## Uninstall
