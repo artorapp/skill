@@ -46,6 +46,32 @@ npx skills add artorapp/skill
 > marketplace above. skills.sh listings populate automatically from anonymous `skills add`
 > telemetry — there's no manual submission.
 
+### Other agents (OpenCode, etc.)
+
+The `/artor:*` slash commands and the plugin/marketplace are **Claude Code-specific**. Other
+agents that support the `SKILL.md` format (e.g. **OpenCode**) can use the **knowledge skill** —
+the same workflows, just without the slash commands.
+
+Easiest, auto-detects installed agents:
+
+```bash
+npx skills add artorapp/skill
+```
+
+Or drop the `SKILL.md` into a directory the agent scans (the folder name must be `artor`, matching
+the skill's `name`). For OpenCode — global (all projects):
+
+```bash
+mkdir -p ~/.config/opencode/skills/artor
+curl -fsSL https://raw.githubusercontent.com/artorapp/skill/main/artor/SKILL.md \
+  -o ~/.config/opencode/skills/artor/SKILL.md
+```
+
+Per-project, use `.opencode/skills/artor/SKILL.md` instead. OpenCode also reads
+`~/.claude/skills/*/SKILL.md`, so a single `artor/` folder there serves Claude Code and OpenCode
+at once. The `artor` CLI install (`npm install -g artor-cli`) is the same for every agent — the
+skill only teaches the agent how to drive it.
+
 Restart Claude Code (or start a new session). The skill then loads as `/artor:artor`, and the
 commands below become available.
 
