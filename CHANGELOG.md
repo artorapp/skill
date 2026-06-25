@@ -7,6 +7,15 @@ uses pre-1.0 (0.x) semver — new user-visible capability bumps MINOR, fixes/doc
 After a version bump, users pull it with `claude plugin marketplace update artor && claude plugin
 update artor@artor` (update only fires on a version bump).
 
+## [0.4.0] - 2026-06-25
+
+### Changed
+
+- **Renamed `/artor:start` → `/artor:start-here`** (clearer first-run entry point). Update any
+  muscle memory or docs that referenced `/artor:start`.
+- Clarified that the walkthrough **installs** the `artor` CLI (`npm install -g artor-cli`) when
+  it's missing, not merely checks for it — reflected in the command description and README.
+
 ## [0.3.0] - 2026-06-25
 
 ### Added
