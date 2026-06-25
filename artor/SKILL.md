@@ -92,6 +92,12 @@ workflows you'll drive most.
 - It auto-detects the framework: Next/SSR → **node-server** (serves static AND dynamic/API
   routes), pure-static frameworks → **static**. Force with `--static` / `--node`; pass
   `--dir <path>` for a non-standard output dir.
+- **Plain HTML, no framework, no build** — a hand-written `index.html` (plus assets) at the
+  project root publishes as a **static** site with no build step. The homepage must be named
+  `index.html` at the root; if there are `.html` files but none is `index.html`, publish stops
+  with a clear message asking you to rename the entry page (it never guesses). This only
+  applies when no framework, `build` script, or `out`/`dist`/`build` dir is found, so adding a
+  framework later just publishes that version as the right kind of app.
 - Publishing prints the assigned version number and preview URL (and any aliases moved).
   Report exactly what the CLI returns — never invent a version or URL.
 - Versions are **immutable** — to update a shared link, move an alias (`-v <name>`; `latest`
