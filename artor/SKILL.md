@@ -62,9 +62,9 @@ workflows you'll drive most.
 
 | Goal                                         | Command                                                      |
 | -------------------------------------------- | ------------------------------------------------------------ |
-| Share one fixed version (token shown once)   | `artor share add --mode pinned --deployment <id> [--days N]` |
+| Share one fixed version                      | `artor share add --mode pinned --deployment <id> [--days N]` |
 | Share a link that follows newest             | `artor share add [--mode latest] [--days N] [--warn]`        |
-| List this project's share links (linked dir) | `artor share list`                                           |
+| List + recopy this project's live links      | `artor share list`                                           |
 | Extend a live link                           | `artor share extend <shareId> [--days N]`                    |
 | Turn a link off (dead, not "revoke")         | `artor share off <shareId>`                                  |
 
@@ -219,9 +219,11 @@ read those threads from the CLI and act on them — no dashboard needed.
 `artor share` mints **anonymous, view-only** links — anyone with the URL can see the prototype,
 no Artor login. This is the only way org content leaves the closed garden, so treat it carefully.
 
-- **The token is shown exactly once**, at `share add` — it's never re-retrievable and `share list`
-  never prints it. Capture it from the `add` output and hand it to the user; if it's lost, the
-  link must be re-shared for a fresh token.
+- **A live link is recopyable.** The full URL is printed at `share add` **and** re-displayed by
+  `artor share list` for every link that's still live (the server decrypts the at-rest token on an
+  authenticated, org-scoped read). So a lost link isn't gone — run `share list` to copy it again.
+  Only a **dead** link (turned off / expired) or a **legacy** row predating encrypted-at-rest tokens
+  has no recoverable URL: `share list` shows `(reshare to copy)` and you must re-add for a fresh one.
 - **`--mode pinned`** ties the link to **one fixed version** (pass `--deployment <id>`) — its bytes
   never change. **`--mode latest`** (the default) follows the newest publish.
 - **Duration** is `--days N` (default 7); the server clamps it to the org cap and platform ceiling
@@ -237,11 +239,21 @@ no Artor login. This is the only way org content leaves the closed garden, so tr
 - "publish this as v4 labeled dark-mode" → `artor publish --label dark-mode` (the version
   number is assigned by the server; report what it returns).
 - "share the staging build" → `artor publish -v staging` then `artor open --alias staging`.
-- "give me a public link" → `artor share add` (capture the one-time token; default follows latest).
+- "give me a public link" → `artor share add` (default follows latest), or `artor share list` to
+  recopy an existing live one.
 - "get me the link" → `artor open` (or read the URL from the last `publish` output).
 - "remix / fork this" → `artor remix <project>` (new project you own), not `pull`.
 
 Report the exact version number and URL the CLI returns; do not invent them.
+
+## Reporting back to the user
+
+- **Always surface the URL.** Whenever a command returns a link (`publish`, `open`, `share add`,
+  `share list`), print it back verbatim so the user can click/copy it — never bury it or just say
+  "done". A copyable URL is the single most useful thing you can hand back.
+- **Always report what happened — short, in bullet points.** After running a command, give back the
+  key info the CLI returned (version number, link, mode, expiry, counts, what changed), but keep it
+  tight: a few bullets, not prose. Never drop the result on the floor; never pad it.
 
 ## Review widget
 

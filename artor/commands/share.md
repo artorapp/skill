@@ -22,8 +22,10 @@ artor share add [--days N] [--warn]
 artor share add --mode pinned --deployment <id> [--days N]
 ```
 
-- **The token is shown exactly once** in the `add` output — capture it and hand it to the user.
-  It's never re-retrievable; `share list` never prints it. If lost, re-share for a fresh token.
+- **A live link is recopyable.** The full URL prints at `share add` **and** is re-displayed by
+  `artor share list` while the link is live — so a lost link isn't gone, just run `share list`.
+  Only a **dead** (turned-off/expired) or **legacy** (pre-encryption) link has no recoverable URL
+  (`share list` shows `(reshare to copy)`); re-add for a fresh one.
 - **`--days N`** sets duration (default 7). The server clamps it to the org cap and the platform
   ceiling (≤ 90 days). **`--warn`** emails the sharer ~24h before expiry.
 
