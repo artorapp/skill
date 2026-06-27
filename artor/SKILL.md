@@ -90,9 +90,14 @@ workflows you'll drive most.
 
 | Goal                                        | Command                                                       |
 | ------------------------------------------- | ------------------------------------------------------------- |
+| Install the Artor Claude Code skill         | `artor install` / `install-claude-plugin` / `install-skill`   |
 | Self-update the CLI                         | `artor update`                                                |
 | Point the CLI at a local/custom dashboard   | `artor dev [--port N] [--url <http(s)>] [--verbose]` / `off` / `status` |
 
+- **`artor install`** installs this Claude Code skill (user-initiated). On a TTY, bare `artor
+  install` asks which method; pick directly with **`install-claude-plugin`** (cross-platform, uses
+  the `claude` CLI) or **`install-skill`** (macOS/Linux, runs `skill.sh` via `curl | bash`). It's
+  idempotent — re-running updates an existing install. Restart Claude Code after installing.
 - **`artor update`** self-updates the CLI (it detects how it was installed and runs the right
   package-manager command; never silent). If a command fails with **HTTP 426 Upgrade Required**
   ("Run `artor update`"), the server's minimum-CLI floor was bumped — run `artor update`, then retry.
