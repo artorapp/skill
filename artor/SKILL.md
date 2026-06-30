@@ -112,7 +112,13 @@ workflows you'll drive most.
   need to run `npm run build` first. Pass `--no-build` to reuse an existing build output.
 - It auto-detects the framework: Next/SSR → **node-server** (serves static AND dynamic/API
   routes), pure-static frameworks → **static**. Force with `--static` / `--node`; pass
-  `--dir <path>` for a non-standard output dir.
+  `--dir <path>` for a non-standard output dir. The build uses the project's own package
+  manager (npm, pnpm, yarn, or Bun — detected from the lockfile).
+- **A live app is boot-tested before upload** — Artor starts it exactly as the server will and
+  waits for it to listen. If it crashes on startup (e.g. a missing dependency), publishing
+  **stops on your machine** with the crash output, so a version that can't run never goes live.
+  If a publish fails this way for an app that legitimately needs live secrets/services to boot,
+  re-run with `--no-smoke` to skip the boot test.
 - **Plain HTML, no framework, no build** — a hand-written `index.html` (plus assets) at the
   project root publishes as a **static** site with no build step. The homepage must be named
   `index.html` at the root; if there are `.html` files but none is `index.html`, publish stops
@@ -130,7 +136,9 @@ workflows you'll drive most.
 
 - **`artor pull`** downloads a version's source and **stays linked to the same project** — a
   later `artor publish` ships that project's _next_ version. Use it to continue work or to
-  fetch the exact code of a reviewed version (`--ref <version>`).
+  fetch the exact code of a reviewed version (`--ref <version>`). If the project uses private
+  packages, `pull` also sets up your `.npmrc` so you can install them right away (through Artor
+  with your own token — never the upstream credential).
 - **`artor remix <project>`** forks into a **brand-new project you own** (like `git clone`),
   recording what it was forked from. Use it to branch off someone else's prototype.
 
