@@ -7,6 +7,46 @@ uses pre-1.0 (0.x) semver — new user-visible capability bumps MINOR, fixes/doc
 After a version bump, users pull it with `claude plugin marketplace update artor && claude plugin
 update artor@artor` (update only fires on a version bump).
 
+## [0.6.0] - 2026-06-29
+
+### Added
+
+- **Publish boot test** — `SKILL.md` now documents that `artor publish` boot-tests a live app
+  before upload: Artor starts it exactly as the server will and waits for it to listen, and if
+  it crashes on startup (e.g. a missing dependency) publishing **stops on your machine** with the
+  crash output, so a version that can't run never goes live. Agents are told the boot test passes
+  as soon as the app listens (it doesn't slow a healthy publish).
+- **`--no-smoke` escape** — documented for the case where a publish fails the boot test because the
+  app legitimately needs live secrets/services to start; re-running with `--no-smoke` skips it.
+- **Package-manager detection** — clarified that the build uses the project's **own** package
+  manager (npm, pnpm, yarn, or Bun), detected from the lockfile each publish, so switching managers
+  is picked up automatically.
+- **`artor pull` sets up `.npmrc`** — documented that pulling a private-package prototype now
+  configures your `.npmrc` so scoped packages install immediately **through Artor with your own
+  token** — the upstream credential never travels to a remixer's machine.
+
+### Notes
+
+- Mirrors `artor-cli` 0.11.0 (the release that ships `--no-smoke`, Bun detection, the boot test,
+  and the `pull` `.npmrc` setup). Docs-only skill change; no command surface added here.
+
+## [0.5.1] - 2026-06-26
+
+### Added
+
+- Documented the **`artor install` command family** in `SKILL.md` / README: `install-claude-plugin`
+  (native Claude Code plugin via the `claude` CLI) vs `install-skills` (every other tool — Codex,
+  Cursor, Gemini, Copilot, … — via the Vercel `npx skills` CLI, cross-platform). Bare `artor install`
+  asks which on a TTY. (Backfilled changelog entry — the bump shipped in 0.5.1.)
+
+## [0.5.0] - 2026-06-26
+
+### Added
+
+- Documented that **live share links are recopyable** via `artor share list` (the bearer twin of the
+  dashboard's re-display), so a designer can recopy a still-live link from the terminal — plus
+  reporting guidance for sharing flows. (Backfilled changelog entry — the bump shipped in 0.5.0.)
+
 ## [0.4.1] - 2026-06-25
 
 ### Added
