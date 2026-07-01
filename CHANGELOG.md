@@ -7,6 +7,32 @@ uses pre-1.0 (0.x) semver — new user-visible capability bumps MINOR, fixes/doc
 After a version bump, users pull it with `claude plugin marketplace update artor && claude plugin
 update artor@artor` (update only fires on a version bump).
 
+## [0.6.1] - 2026-06-30
+
+### Added
+
+- **Monorepo guidance** — `SKILL.md` gains a new "Monorepos: run per-app, from the app's own
+  directory" section so an agent knows how to proceed inside a workspace repo. It spells out that:
+  - the `artor` CLI has **no** workspace or monorepo awareness: `artor init` and `artor publish`
+    operate on the **current working directory** (they read the cwd's `package.json`, detect the
+    framework, and build there), with no app picker and no workspace scanning;
+  - running at a monorepo/workspace root finds no `build` script and **fails**, because the root
+    is not a publishable app;
+  - the model is **per-folder** — before `init`/`publish`, the working directory must be the
+    specific app's directory whose `package.json` carries the `build` script and the framework
+    dependency (e.g. `next`), never the workspace root, and the `.artor` link is per-folder too;
+  - **detect a monorepo first** by checking for a `workspaces` field in the root `package.json`
+    or a `pnpm-workspace.yaml`, and if present treat it as a workspace root, not an app;
+  - then **`cd` into the target app** (e.g. `cd apps/web`) and run `artor init`, then
+    `artor publish`, from inside it;
+  - if the user has not said which app, **ask** which subfolder to publish rather than guessing.
+
+### Notes
+
+- Docs-only skill change; no command surface, flag, or CLI behavior changed. This clarifies
+  **where** the existing `init`/`publish` commands must be run in a multi-app repo. No invented
+  flags or picker — none exist. PATCH bump per the pre-1.0 (0.x) wording/guidance rule.
+
 ## [0.6.0] - 2026-06-29
 
 ### Added
