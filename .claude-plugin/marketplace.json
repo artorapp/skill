@@ -7,7 +7,7 @@
       "name": "artor",
       "source": "./artor",
       "description": "artor CLI skill — publish, version, and share prototypes.",
-      "version": "0.6.0"
+      "version": "0.6.1"
     }
   ]
 }

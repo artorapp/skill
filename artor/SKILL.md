@@ -17,6 +17,26 @@ workflows you'll drive most.
 - `artor whoami` — the signed-in user and active org (else `artor login`).
 - A project is linked once via `.artor/project.json`. If absent, run `artor init`.
 
+## Monorepos: run per-app, from the app's own directory
+
+`artor` has **no** workspace or monorepo awareness. `artor init` and `artor publish` operate on
+the **current working directory**: they read the cwd's `package.json`, detect the framework, and
+build there. There is no app picker and no workspace scanning. Running at a monorepo/workspace
+root finds no `build` script and fails.
+
+The model is **per-folder**: before `artor init` or `artor publish`, make sure the working
+directory is the specific app's directory — the one whose `package.json` has the `build` script
+and the framework dependency (e.g. `next`), **not** the workspace root. The `.artor` project link
+is per-folder too, so each app you publish gets its own link.
+
+- **Detect a monorepo first.** If the root `package.json` has a `workspaces` field, or a
+  `pnpm-workspace.yaml` exists, this is a workspace root, not a publishable app. Do not run
+  `init`/`publish` there.
+- **Then `cd` into the target app** (e.g. `cd apps/web`) — the subfolder whose `package.json`
+  has both the `build` script and the framework dep — and run `artor init`, then `artor publish`,
+  from inside it.
+- If the user hasn't said which app, ask which subfolder to publish rather than guessing.
+
 ## Command reference
 
 **Auth & identity**
