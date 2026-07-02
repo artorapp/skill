@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Release-consistency checks
+        run: node scripts/check-release.mjs
+      - name: Validate plugin manifests (claude CLI)
+        run: |
+          npm install -g @anthropic-ai/claude-code
+          claude plugin validate .
+      - name: Markdown link check (local paths)
+        run: |
+          set -e
+          fail=0
+          # every relative .md link in repo docs must resolve
+          for f in README.md DEPLOYING.md CHANGELOG.md artor/SKILL.md artor/commands/*.md artor/references/*.md; do
+            [ -f "$f" ] || continue
+            dir=$(dirname "$f")
+            for link in $(grep -oE '\]\((\./)?[A-Za-z0-9_/.-]+\.md' "$f" | sed 's/](//' | sed 's/^\.\///'); do
+              if [ ! -f "$dir/$link" ] && [ ! -f "$link" ]; then
+                echo "✗ $f -> $link (missing)"; fail=1
+              fi
+            done
+          done
+          exit $fail

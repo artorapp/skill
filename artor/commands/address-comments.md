@@ -3,7 +3,8 @@ description: Read reviewer comments on an Artor version, fix them in code, re-pu
 ---
 
 Reviewers leave comments pinned to a **specific version** (via the in-page review widget). Drive
-the full loop from the CLI: read → fix → re-publish → resolve.
+the full loop from the CLI: read → fix → re-publish → resolve. Full semantics: the artor skill's
+"Address review feedback" section (auto-loaded as `/artor:artor`).
 
 ## 1. Read the open threads
 

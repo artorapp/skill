@@ -37,8 +37,13 @@ artor whoami      # confirms the signed-in user + active org
 
 ## 2. Link a project
 
+**Monorepo pre-check first.** If the root `package.json` has a `workspaces` field, or a
+`pnpm-workspace.yaml` exists, the current dir is a workspace root, not a publishable app. `cd` into
+the specific app's folder (the one whose `package.json` has the `build` script + framework dep). If
+you don't know which app, ask before continuing. (See the artor skill's "Monorepos" section.)
+
 - If `.artor/project.json` already exists, this dir is linked — skip to step 3.
-- Otherwise create + link a project here:
+- Otherwise create + link a project here (or `artor link <slug>` to attach to an existing project):
 
   ```bash
   artor init
@@ -46,7 +51,7 @@ artor whoami      # confirms the signed-in user + active org
 
   `artor init` also installs the `@artorapp/web-sdk` review widget and wires it into the client
   entry (safe to commit — it self-disables off the preview origin). If it reports it couldn't
-  auto-wire, follow its printed reminder.
+  auto-wire, follow its printed reminder. Widget details: the artor skill's review-widget reference.
 
 ## 3. Publish the first version
 
@@ -55,9 +60,11 @@ artor publish
 ```
 
 - Builds on demand (no need to `npm run build` first). Next/SSR → node-server; pure-static → static.
+- **Boot test:** the app is started before upload; if it crashes, publish stops with the crash
+  output. Read it and fix the build — don't reflexively reach for `--no-smoke`.
 - Report the **exact** version number and **preview URL** the CLI returns. This URL is
   **members-only** — anyone opening it must be logged into the org.
-- Open it: `artor open`.
+- Open it: `artor open` (prints the URL first; headless-safe).
 
 ## 4. (Optional) Share it publicly
 
@@ -68,7 +75,8 @@ closed garden:
 artor share add        # anonymous, view-only link that follows the newest version
 ```
 
-Capture the **one-time token** from the output and hand it to them (it's never re-retrievable).
+The full URL prints here **and** is recopyable any time the link is live via `artor share list`, so
+a lost link isn't gone. Hand the printed URL to them. Details: `/artor:share`.
 
 ## Wrap up
 
