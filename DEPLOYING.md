@@ -10,8 +10,13 @@ is no separate "skill registry"; a git repo *is* the marketplace.
 .claude-plugin/marketplace.json   # marketplace manifest (lists the plugin)
 artor/
 ├── .claude-plugin/plugin.json    # plugin manifest (name + version)
-└── SKILL.md                      # the skill itself  ← source of truth
+├── SKILL.md                      # the skill itself  ← source of truth
+├── references/                   # on-demand deep dives loaded from SKILL.md
+└── commands/                     # /artor:* slash commands (Claude Code only)
 skill.sh                          # convenience installer (curl | bash)
+scripts/release.sh                # one-step version bump + validation
+scripts/check-release.mjs         # consistency + drift checks (also run by CI)
+.github/workflows/ci.yml          # CI: checks + claude plugin validate
 ```
 
 - **`marketplace.json`** — `name: "artor"`, `owner`, and a `plugins[]` entry with
@@ -41,29 +46,36 @@ CLI command, flag, or agent-relied-on output changes.
 
 ```bash
 # 1. edit the source of truth
-$EDITOR artor/SKILL.md
+$EDITOR artor/SKILL.md          # and artor/references/*.md, artor/commands/*.md as needed
 
-# 2. bump BOTH version fields to the SAME new value
-#    artor/.claude-plugin/plugin.json        ->  "version"
-#    .claude-plugin/marketplace.json         ->  plugins[0].version
+# 2. sweep for drift: every fact you changed may also live in a command file
+grep -rl "<the old wording>" artor/
 
-# 3. validate the manifests
-claude plugin validate .
+# 3. add a CHANGELOG.md entry, then bump + validate in one step
+./scripts/release.sh X.Y.Z      # bumps BOTH manifests, runs checks + plugin validate, stages
 
 # 4. commit + push
-git add -A
 git commit -m "skill: <what changed> (vX.Y.Z)"
 git push
 ```
 
 That's it — pushing to `main` makes the new version available to `claude plugin update`.
+CI (`.github/workflows/ci.yml`) re-runs `scripts/check-release.mjs` (version match, changelog
+entry, drift guards, frontmatter sanity) and `claude plugin validate` on every push/PR.
+
+> **When you fix a cross-file contradiction, add a drift guard** for it in
+> `scripts/check-release.mjs` (section 4) so it can never come back.
 
 ### Versioning (pre-1.0, 0.x semver)
 
 | Change | Bump |
 |--------|------|
-| New skill capability / command coverage / behavior change | **MINOR** (`0.1.0 → 0.2.0`) |
-| Typo, wording, formatting only | **PATCH** (`0.1.0 → 0.1.1`) |
+| New skill capability: new command file, new workflow, documents **new CLI behavior** | **MINOR** (`0.1.0 → 0.2.0`) |
+| Clarifies/fixes wording about **existing, already-documented behavior**; typo/formatting | **PATCH** (`0.1.0 → 0.1.1`) |
+
+The line that matters: *does an agent gain the ability to do something it couldn't before?*
+New CLI feature documented → MINOR, even if "docs-only". Better explanation of a feature the
+skill already covered → PATCH.
 
 ### Why the version bump is mandatory
 
