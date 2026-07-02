@@ -7,6 +7,26 @@ uses pre-1.0 (0.x) semver — new user-visible capability bumps MINOR, fixes/doc
 After a version bump, users pull it with `claude plugin marketplace update artor && claude plugin
 update artor@artor` (update only fires on a version bump).
 
+## [0.8.0] - 2026-07-02
+
+### Added
+
+- **Structured `--json` guidance for artor-cli ≥ 0.14** — the CLI now offers `--json` on every read
+  command, and the skill points agents at it instead of scraping human tables:
+  - covered surfaces: `status`, `whoami`, `project list|search`, `share list`, `comments`, `trash`,
+    `folder list`, `env list`, `mock list`, `skill list`, and `open`;
+  - **`artor open --json`** highlighted as the headless way to grab the preview URL — it prints
+    `{ "url": … }` and does **not** launch a browser (new command-reference row, publishing note,
+    and the "get me the link" interpretation now use it);
+  - convention documented: `--json` prints the payload to stdout and suppresses the human
+    rendering; if the flag is rejected, the CLI is older than 0.14 → `artor update`.
+
+### Notes
+
+- Mirrors `artor-cli` 0.14.0 (the terminal-UI polish release: `--json` coverage, unified error
+  renderer, sub-command `--help`, `open` empty-state now informational with exit 0). MINOR bump —
+  documents new CLI behavior.
+
 ## [0.7.0] - 2026-07-02
 
 Major rewrite and restructure. `SKILL.md` is now agent-agnostic (any coding agent, not just Claude
