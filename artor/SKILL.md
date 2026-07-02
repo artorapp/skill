@@ -9,8 +9,12 @@ Artor versions and shares prototypes (framework-agnostic; Next.js/SSR is the com
 Run the `artor` CLI from the project root. Every published version gets a permanent, **members-only**
 preview URL; review comments and shared org knowledge (skills, env vars, mock datasets, registries)
 attach to the project. `artor --help` prints the full command surface — this skill covers the
-workflows you'll drive most. Prefer `--json` where a command offers it (e.g. `comments`); elsewhere
-report the exact CLI output rather than paraphrasing.
+workflows you'll drive most. **Prefer `--json` on read commands** (artor-cli ≥ 0.14): `status`,
+`whoami`, `project list|search`, `share list`, `comments`, `trash`, `folder list`, `env list`,
+`mock list`, `skill list`, and `open` (prints `{ "url": … }` **without** launching a browser —
+ideal for grabbing the preview URL headlessly). It prints the payload to stdout and suppresses the
+human rendering. If `--json` is rejected, the CLI is older — `artor update`. For write commands
+(no `--json`), report the exact CLI output rather than paraphrasing.
 
 ## First check
 
@@ -78,6 +82,7 @@ framework dependency (e.g. `next`), **not** the workspace root. The `.artor` lin
 | Force artifact type / entry / output dir    | `artor publish --static\|--node [--entry <s>] [--dir <p>]` |
 | Skip the boot smoke test (see notes)        | `artor publish --no-smoke`                                 |
 | Open the latest / a specific version        | `artor open` / `artor open --version 3` / `--alias <name>` |
+| Get the preview URL without a browser       | `artor open --json` (prints `{ "url": … }`, no launch)     |
 | Read review comments on a version           | `artor comments [--version <ref>] [--open] [--json]`       |
 | Resolve / reopen a comment thread           | `artor comments resolve <threadId>` / `reopen <threadId>`  |
 
@@ -158,8 +163,9 @@ framework dependency (e.g. `next`), **not** the workspace root. The `.artor` lin
 - Versions are **immutable** — to update a shared link, move an alias (`-v <name>`; `latest` always
   tracks the newest publish), not the old version's bytes.
 - `artor open` always prints the URL first (`Opening <url>`) and, if it can't launch a browser,
-  falls back to `(open it manually: <url>)` — so it is safe in headless/CI environments. With no live
-  version it prints "No live versions to open. Run `artor publish` first."
+  falls back to `(open it manually: <url>)` — so it is safe in headless/CI environments. Prefer
+  `artor open --json` to get `{ "url": … }` with no browser launch at all. With no live version,
+  plain `open` prints "No live versions to open. Run `artor publish` first." (info, exit 0).
 - Secrets are never uploaded: `.env*`, `.envrc`, `.npmrc`, `.yarnrc*`, `.netrc`, `credentials*`,
   `kubeconfig`, `*.pem`, `*.key`, `id_rsa*`, and similar secret files are force-excluded regardless
   of `.gitignore` (as are `node_modules`, `.git`, `.next`, `.artor`, …).
@@ -276,7 +282,8 @@ Artor login. This is the only way org content leaves the closed garden, so treat
 - "share the staging build" → `artor publish -v staging` then `artor open --alias staging`.
 - "give me a public link" → `artor share add` (default follows latest), or `artor share list` to
   recopy an existing live one.
-- "get me the link" → `artor open` (or read the URL from the last `publish` output).
+- "get me the link" → `artor open --json` (reads the URL without opening a browser), or read the
+  URL from the last `publish` output.
 - "remix / fork this" → `artor remix <project>` (new project you own), not `pull`.
 
 Report the exact version number and URL the CLI returns; do not invent them.
