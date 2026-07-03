@@ -7,6 +7,24 @@ uses pre-1.0 (0.x) semver — new user-visible capability bumps MINOR, fixes/doc
 After a version bump, users pull it with `claude plugin marketplace update artor && claude plugin
 update artor@artor` (update only fires on a version bump).
 
+## [0.9.0] - 2026-07-02
+
+### Added
+
+- **`address-comments` skips `aiIgnored` threads.** `artor-cli` 0.15.0 adds `artor comments
+  ignore|unignore <threadId>` and an `aiIgnored` field on every thread in `artor comments --open
+  --json`. A reviewer sets `aiIgnored` specifically to keep an automated pass off a thread, so both
+  `/artor:address-comments` and the `SKILL.md` "Address review feedback" walkthrough now:
+  - filter `aiIgnored: true` threads out of the gather step (`jq '.threads |= map(select(.aiIgnored
+    != true))'`) before doing anything with them;
+  - explicitly call out that `artor comments resolve`/`reopen` must never be called on an
+    `aiIgnored` thread — it's off-limits, not "already handled";
+  - the command-reference table gains `artor comments ignore|unignore <threadId>`.
+
+### Notes
+
+- Mirrors `artor-cli` 0.15.0. MINOR bump — documents new CLI behavior the skill must honor.
+
 ## [0.8.0] - 2026-07-02
 
 ### Added
