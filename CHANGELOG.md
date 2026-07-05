@@ -7,6 +7,26 @@ uses pre-1.0 (0.x) semver — new user-visible capability bumps MINOR, fixes/doc
 After a version bump, users pull it with `claude plugin marketplace update artor && claude plugin
 update artor@artor` (update only fires on a version bump).
 
+## [0.10.0] - 2026-07-05
+
+### Added
+
+- **Documents `artor init`'s git auto-init** — `init` now auto-runs `git init` (+ a starter
+  `.gitignore`) when the folder isn't already inside a repository, best-effort so a failure only
+  warns and never blocks linking. Documented in the "First check" section and the project-lifecycle
+  command-reference row, with the new `--no-git` opt-out flag.
+- **Documents the publish-time `@artorapp/web-sdk` update check** — `artor publish` now checks npm
+  for a newer review-widget SDK version when the project still pins `"latest"` (what `init` writes)
+  and offers to update it before building. Never blocks or fails a publish: asks on a TTY, updates
+  silently with `--yes`, skips silently with no TTY and no `--yes`; an explicit version pin is left
+  alone. Documented in "Publishing notes", the publish command-reference row, and
+  `commands/publish.md`'s flag list, with the new `--no-sdk-update` opt-out flag.
+
+### Notes
+
+- Mirrors `artor-cli` 0.15.0 (PR #184: publish-time web-sdk update check + `artor init` git
+  auto-init). MINOR bump — documents new CLI behavior, no skill logic changes.
+
 ## [0.8.0] - 2026-07-02
 
 ### Added
