@@ -18,7 +18,9 @@ update artor@artor` (update only fires on a version bump).
   version-number bloat that comes from publishing after every trivial AI-driven edit. A real
   change still always publishes as a new version, no extra prompt. Overwriting requires the
   project owner or an org admin; a 403 falls back to a normal new-version publish, reported
-  plainly to the designer.
+  plainly to the designer. Overwriting also turns off any public share pinned to that version
+  (the designer must reshare for a live link again) — the skill now calls this out before
+  offering to overwrite.
 - **Local git safety checkpoint before every publish.** If the working directory is a git repo
   with uncommitted changes, the skill now commits them locally (reusing the drafted changelog
   message) before running `artor publish` — a rollback point for a bad AI edit or a version

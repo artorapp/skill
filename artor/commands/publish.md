@@ -55,9 +55,14 @@ the skill's "Small tweaks: overwrite vs. new version" section. Short version:
 - **Small** (copy/text-only, a single style tweak, a typo fix) → ask which is wanted: overwrite the
   current version in place (which alias — `latest` by default, confirm with the designer), or
   publish as a new version. Overwrite needs the project owner or an org admin; a 403 falls back to
-  a normal new-version publish.
-- **Real** (new feature, new page/route, structural change) → skip this prompt, go straight to
-  step 4 and publish as a new version like normal.
+  a normal new-version publish. Overwrite-in-place also requires the org's replace mode to be the
+  default `overwrite` — an org set to `alias` mode publishes a new version and moves the alias
+  instead; report exactly what the CLI returns either way.
+  **Caution:** overwriting also turns off any public share pinned to that version — the designer
+  would need to reshare to get a live link again. Mention this before overwriting if the version
+  might be publicly shared.
+- **Real** (new feature, new page/route, structural change) → skip this prompt and continue the
+  normal flow (checkpoint, then publish as a new version).
 
 ## 4. Local safety checkpoint (if using git)
 

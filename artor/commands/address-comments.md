@@ -36,7 +36,8 @@ the skill's "Local safety checkpoint before publishing" section):
 git add -A && git commit -m "artor: <summary of what you fixed>"
 ```
 
-Local-only — never `git push`. Skip silently if git isn't installed or this isn't a repo.
+Local-only — never `git push`. Skip silently if git isn't installed or this isn't a repo. If the
+commit itself fails, report it and stop — don't proceed to publish.
 
 ## 4. Re-publish
 
@@ -51,11 +52,14 @@ artor publish --message "<summary of what you fixed>"
 artor publish -v <chosen-alias> --message "<summary of what you fixed>"
 ```
 
-Tell the reviewer the new version number / URL. Old comments stay anchored to the version they
-were left on (this holds whether the fix shipped as a new version or an overwrite of an existing
-alias — the `deploymentId` a thread is anchored to only changes if that specific alias's
-deployment was the one overwritten, so re-check `artor comments --version <ref>` if anything looks
-off before reporting).
+Tell the reviewer the new version number / URL. An overwrite keeps the same `deploymentId`, so
+existing comment threads stay attached but now overlay the changed content; a new-version publish
+leaves the old threads untouched on the old deployment. Re-check `artor comments --version <ref>`
+if anything looks off before reporting.
+
+**Caution:** re-publishing with an overwrite also turns off any public share pinned to that
+version — the designer would need to reshare to get a live link again. Mention this before
+overwriting if the version might be publicly shared.
 
 ## 5. Resolve the addressed threads
 

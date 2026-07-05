@@ -56,19 +56,19 @@ framework dependency (e.g. `next`), **not** the workspace root. The `.artor` lin
 
 **Project lifecycle**
 
-| Goal                                     | Command                                                           |
-| ---------------------------------------- | ----------------------------------------------------------------- |
-| Create + link a project here             | `artor init [--name "My App"] [--folder <f>] [--org <slug>]`      |
-| Scaffold from an org template            | `artor init --template <slug> [--here] [--no-install]`            |
-| Attach this dir to an EXISTING project   | `artor link [<id\|slug>] [--org <slug>] [--force]`                |
-| Detach this dir (local-only, keeps code) | `artor unlink [--all] [--skills] [--npmrc] [--link-only]`         |
-| Download a version's source, stay linked | `artor pull [--ref <r>] [--dir <p>] [--project <slug>] [--force]` |
+| Goal                                     | Command                                                                            |
+| ---------------------------------------- | ---------------------------------------------------------------------------------- |
+| Create + link a project here             | `artor init [--name "My App"] [--folder <f>] [--org <slug>]`                       |
+| Scaffold from an org template            | `artor init --template <slug> [--here] [--no-install]`                             |
+| Attach this dir to an EXISTING project   | `artor link [<id\|slug>] [--org <slug>] [--force]`                                 |
+| Detach this dir (local-only, keeps code) | `artor unlink [--all] [--skills] [--npmrc] [--link-only]`                          |
+| Download a version's source, stay linked | `artor pull [--ref <r>] [--dir <p>] [--project <slug>] [--force]`                  |
 | Fork a project into a NEW one you own    | `artor remix <project> [name] [--name <n>] [--org <slug>] [--ref <r>] [--dir <p>]` |
-| Rename a project's display name          | `artor rename [<slug>] "New Name"`                                |
-| Trash a project (recoverable 30 days)    | `artor rm [<slug>] [--yes]`                                       |
-| Restore a trashed project                | `artor restore <slug>`                                            |
-| List trashed projects + time left        | `artor trash`                                                     |
-| Organize prototypes into folders         | `artor folder list\|create\|rename\|color\|move\|rm\|clear`       |
+| Rename a project's display name          | `artor rename [<slug>] "New Name"`                                                 |
+| Trash a project (recoverable 30 days)    | `artor rm [<slug>] [--yes]`                                                        |
+| Restore a trashed project                | `artor restore <slug>`                                                             |
+| List trashed projects + time left        | `artor trash`                                                                      |
+| Organize prototypes into folders         | `artor folder list\|create\|rename\|color\|move\|rm\|clear`                        |
 
 **Publish, open, review**
 
@@ -79,7 +79,7 @@ framework dependency (e.g. `next`), **not** the workspace root. The `.artor` lin
 | Publish with a label                        | `artor publish --label "dark-mode"`                        |
 | Publish and move a named alias              | `artor publish -v staging`                                 |
 | Reuse an existing build / skip install      | `artor publish --no-build` / `--no-install`                |
-| Skip the review-widget update check | `artor publish --no-sdk-update` |
+| Skip the review-widget update check         | `artor publish --no-sdk-update`                            |
 | Force artifact type / entry / output dir    | `artor publish --static\|--node [--entry <s>] [--dir <p>]` |
 | Skip the boot smoke test (see notes)        | `artor publish --no-smoke`                                 |
 | Open the latest / a specific version        | `artor open` / `artor open --version 3` / `--alias <name>` |
@@ -89,23 +89,23 @@ framework dependency (e.g. `next`), **not** the workspace root. The `.artor` lin
 
 **Share (anonymous public links)**
 
-| Goal                                         | Command                                                      |
-| -------------------------------------------- | ------------------------------------------------------------ |
-| Share one fixed version                      | `artor share add --mode pinned --deployment <id> [--days N]` |
-| Share a link that follows newest             | `artor share add [--mode latest] [--days N] [--warn]`        |
-| List + recopy this project's live links      | `artor share list`                                           |
-| Extend a live link                           | `artor share extend <shareId> [--days N]`                    |
-| Turn a link off (dead, not "revoke")         | `artor share off <shareId>`                                  |
+| Goal                                    | Command                                                      |
+| --------------------------------------- | ------------------------------------------------------------ |
+| Share one fixed version                 | `artor share add --mode pinned --deployment <id> [--days N]` |
+| Share a link that follows newest        | `artor share add [--mode latest] [--days N] [--warn]`        |
+| List + recopy this project's live links | `artor share list`                                           |
+| Extend a live link                      | `artor share extend <shareId> [--days N]`                    |
+| Turn a link off (dead, not "revoke")    | `artor share off <shareId>`                                  |
 
 **Org knowledge** (set/admin actions need an owner/admin role — details: `references/org-admin.md`)
 
-| Goal                                      | Command                                                                                |
-| ----------------------------------------- | ------------------------------------------------------------------------------------- |
-| Set / list / remove env vars              | `artor env set KEY=VALUE [--local]` / `list` / `rm KEY` / `pull`                       |
-| Mock datasets (fallback at `/__mock/<name>`) | `artor mock set <name> <file.json>` / `list` / `rm` / `promote <name>`             |
-| Org skills (pinned git sources)           | `artor skill add <gh-url> [--name X] [--ref <r>] [--credential <t>] [--enforced]` / … |
-| Org starter templates                     | `artor template push --name X [--slug y] [--desc z]` / `list`                          |
-| Private registry providers                | `artor registry add <@scope> --type azure\|npmjs [--name <l>] [--expires <d>]` / … / `login` |
+| Goal                                         | Command                                                                                      |
+| -------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| Set / list / remove env vars                 | `artor env set KEY=VALUE [--local]` / `list` / `rm KEY` / `pull`                             |
+| Mock datasets (fallback at `/__mock/<name>`) | `artor mock set <name> <file.json>` / `list` / `rm` / `promote <name>`                       |
+| Org skills (pinned git sources)              | `artor skill add <gh-url> [--name X] [--ref <r>] [--credential <t>] [--enforced]` / …        |
+| Org starter templates                        | `artor template push --name X [--slug y] [--desc z]` / `list`                                |
+| Private registry providers                   | `artor registry add <@scope> --type azure\|npmjs [--name <l>] [--expires <d>]` / … / `login` |
 
 **Operator** (platform super-admins only — set via `ARTOR_SUPERADMINS`; details: `references/org-admin.md`)
 
@@ -205,6 +205,12 @@ size of the change from that diff:
   fails with a 403, tell the designer plainly — _"only the project owner or an org admin can
   update a version in place — publishing as a new version instead"_ — and fall back to a normal
   publish rather than failing the whole flow.
+- **Caution: overwriting also turns off any public share pinned to that version** — the designer
+  would need to reshare to get a live link again. Mention this before overwriting if the version
+  might be publicly shared.
+- **Org replace-mode caveat:** overwrite-in-place only happens when the org's replace mode is the
+  default `overwrite`. An org set to `alias` mode instead publishes a new version and just moves
+  the alias — report exactly what the CLI returns either way.
 - This is a per-publish judgment call, not a remembered session preference: ask again next time,
   even if the previous answer was "no."
 
@@ -299,9 +305,10 @@ threads from the CLI and act on them — no dashboard needed.
 2. **Fix the feedback** in the prototype's source. If you need the exact code of the reviewed
    version, `artor pull --ref <version>` it first.
 
-3. **Re-publish** a new version (generate a changelog as above), then tell the reviewer the new
-   version number/URL. Versions are immutable, so your fixes ship as the **next** version — old
-   comments stay anchored to the version they were left on.
+3. **Re-publish** (generate a changelog as above), then tell the reviewer the new version number/URL.
+   Most fixes ship as the **next** version, but a genuinely tiny fix may overwrite the current alias
+   in place instead — see "Small tweaks: overwrite vs. new version" above. Old comments stay anchored
+   to the version they were left on either way.
 
 4. **Resolve the addressed threads** (any member may; re-verified server-side):
 
