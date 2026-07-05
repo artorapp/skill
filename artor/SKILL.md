@@ -24,6 +24,9 @@ human rendering. If `--json` is rejected, the CLI is older — `artor update`. F
   project) or `artor link` (to attach to an existing one — a teammate who `git clone`d an
   already-linked repo runs `artor link`; the CLI takes no position on whether `.artor/project.json`
   is committed).
+- `artor init` also auto-initializes a git repo (`git init` + a starter `.gitignore`) when the
+  folder isn't already inside one — best-effort, so a failure only warns and never blocks linking.
+  Pass `--no-git` to skip it.
 
 ## Monorepos: run per-app, from the app's own directory
 
@@ -58,7 +61,7 @@ framework dependency (e.g. `next`), **not** the workspace root. The `.artor` lin
 
 | Goal                                     | Command                                                           |
 | ---------------------------------------- | ----------------------------------------------------------------- |
-| Create + link a project here             | `artor init [--name "My App"] [--folder <f>] [--org <slug>]`      |
+| Create + link a project here             | `artor init [--name "My App"] [--folder <f>] [--org <slug>] [--no-git]` |
 | Scaffold from an org template            | `artor init --template <slug> [--here] [--no-install]`            |
 | Attach this dir to an EXISTING project   | `artor link [<id\|slug>] [--org <slug>] [--force]`                |
 | Detach this dir (local-only, keeps code) | `artor unlink [--all] [--skills] [--npmrc] [--link-only]`         |
@@ -81,6 +84,7 @@ framework dependency (e.g. `next`), **not** the workspace root. The `.artor` lin
 | Reuse an existing build / skip install      | `artor publish --no-build` / `--no-install`                |
 | Force artifact type / entry / output dir    | `artor publish --static\|--node [--entry <s>] [--dir <p>]` |
 | Skip the boot smoke test (see notes)        | `artor publish --no-smoke`                                 |
+| Skip the web-sdk update check (see notes)   | `artor publish --no-sdk-update`                            |
 | Open the latest / a specific version        | `artor open` / `artor open --version 3` / `--alias <name>` |
 | Get the preview URL without a browser       | `artor open --json` (prints `{ "url": … }`, no launch)     |
 | Read review comments on a version           | `artor comments [--version <ref>] [--open] [--json]`       |
@@ -169,6 +173,10 @@ framework dependency (e.g. `next`), **not** the workspace root. The `.artor` lin
 - Secrets are never uploaded: `.env*`, `.envrc`, `.npmrc`, `.yarnrc*`, `.netrc`, `credentials*`,
   `kubeconfig`, `*.pem`, `*.key`, `id_rsa*`, and similar secret files are force-excluded regardless
   of `.gitignore` (as are `node_modules`, `.git`, `.next`, `.artor`, …).
+- **If `@artorapp/web-sdk` is pinned to `"latest"`** (what `artor init` writes), publish also checks
+  npm for a newer version and offers to update it before building. It never blocks or fails a
+  publish — it asks on a TTY, updates silently with `--yes`, and skips the check with no TTY and no
+  `--yes`. An explicit version pin is left alone. Pass `--no-sdk-update` to skip the check entirely.
 
 ## `pull` vs `remix`
 
