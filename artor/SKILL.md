@@ -79,6 +79,7 @@ framework dependency (e.g. `next`), **not** the workspace root. The `.artor` lin
 | Publish with a label                        | `artor publish --label "dark-mode"`                        |
 | Publish and move a named alias              | `artor publish -v staging`                                 |
 | Reuse an existing build / skip install      | `artor publish --no-build` / `--no-install`                |
+| Skip the review-widget update check | `artor publish --no-sdk-update` |
 | Force artifact type / entry / output dir    | `artor publish --static\|--node [--entry <s>] [--dir <p>]` |
 | Skip the boot smoke test (see notes)        | `artor publish --no-smoke`                                 |
 | Open the latest / a specific version        | `artor open` / `artor open --version 3` / `--alias <name>` |
@@ -152,6 +153,11 @@ framework dependency (e.g. `next`), **not** the workspace root. The `.artor` lin
   fix the build. Only re-run with `--no-smoke` if the app **legitimately** needs live
   secrets/services to boot — never as a reflex to get past a real crash. (After a successful upload,
   Artor also GETs `/` against the live URL as a warn-only check — it never fails the publish.)
+- **If publish asks about a newer review-widget version** (`@artorapp/web-sdk`, the tool
+  reviewers use to leave comments), **recommend accepting it** unless the designer has a specific
+  reason not to — it only offers this when the project still has the dependency at its
+  default `"latest"` pin (an explicit version pin is never touched), so accepting is safe and
+  keeps their prototype's review experience current.
 - **Plain HTML, no framework, no build** — a hand-written `index.html` (plus assets) at the project
   root publishes as a **static** site. The homepage must be named exactly `index.html` at the root;
   if there are `.html` files but none is `index.html`, publish stops asking you to rename the entry
@@ -160,8 +166,17 @@ framework dependency (e.g. `next`), **not** the workspace root. The `.artor` lin
   view it with no login, use `artor share` (below).
 - Publishing prints the assigned version number and preview URL (and any aliases moved). Report
   exactly what the CLI returns — never invent a version or URL.
-- Versions are **immutable** — to update a shared link, move an alias (`-v <name>`; `latest` always
-  tracks the newest publish), not the old version's bytes.
+- **Versions are usually immutable, but a small tweak can overwrite one in place.** By default, a
+  new `artor publish` mints a fresh, permanent version — to move a shared link's target, point an
+  alias at it (`-v <name>`; `latest` always tracks the newest publish unless you overwrite it
+  explicitly). For a genuinely small change (a copy fix, a one-line style tweak), it's fine to ask
+  the designer whether to overwrite the current alias in place instead of minting a new version —
+  see "Small tweaks: overwrite vs. new version" below. Only the project owner or an org admin can
+  overwrite; anyone else's attempt is rejected (403) and falls back to a normal new-version publish.
+- **Artor is a preview/deployment tool, not a code repository.** Its version list exists for
+  sharing and reviewing prototypes — it is not a substitute for git history, and (per the point
+  above) a version can now be intentionally overwritten. Git remains the source of truth for this
+  project's actual history. See "Local safety checkpoint before publishing" below.
 - `artor open` always prints the URL first (`Opening <url>`) and, if it can't launch a browser,
   falls back to `(open it manually: <url>)` — so it is safe in headless/CI environments. Prefer
   `artor open --json` to get `{ "url": … }` with no browser launch at all. With no live version,
@@ -169,6 +184,49 @@ framework dependency (e.g. `next`), **not** the workspace root. The `.artor` lin
 - Secrets are never uploaded: `.env*`, `.envrc`, `.npmrc`, `.yarnrc*`, `.netrc`, `credentials*`,
   `kubeconfig`, `*.pem`, `*.key`, `id_rsa*`, and similar secret files are force-excluded regardless
   of `.gitignore` (as are `node_modules`, `.git`, `.next`, `.artor`, …).
+
+## Small tweaks: overwrite vs. new version
+
+After drafting the changelog (see "Describe what changed" below) and before publishing, judge the
+size of the change from that diff:
+
+- **Copy/text-only, a single style tweak, a typo fix** ("small"): ask the designer — _"This looks
+  like a small tweak. Want me to update the current version in place instead of creating a new
+  one, so we don't rack up versions for tiny changes? If yes, which link should I update —
+  `latest`, or a specific one like `staging`?"_ Default suggestion: `latest`, but always let them
+  confirm or override which alias.
+  - Yes → `artor publish -v <chosen-alias> --message "..."` (this alias's existing content is
+    replaced in place).
+  - No → publish normally (`artor publish --message "..."`, a new version).
+- **A new feature, new page/route, or structural change** ("real"): skip the prompt entirely,
+  publish as a new version like today — no added friction for the common "shipped something real"
+  case.
+- **Permission fallback:** overwriting requires the project owner or an org admin. If the publish
+  fails with a 403, tell the designer plainly — _"only the project owner or an org admin can
+  update a version in place — publishing as a new version instead"_ — and fall back to a normal
+  publish rather than failing the whole flow.
+- This is a per-publish judgment call, not a remembered session preference: ask again next time,
+  even if the previous answer was "no."
+
+## Local safety checkpoint before publishing
+
+If the current directory is a git repository with uncommitted changes, commit them **locally**
+before running `artor publish` — reuse the changelog message you already drafted so there's no
+separate message to invent:
+
+```bash
+git add -A && git commit -m "artor: <the same changelog message>"
+```
+
+This is **local-only** — never `git push`. It exists purely as a rollback point in case the edit,
+or a subsequent version overwrite (above), turns out wrong.
+
+- If git isn't installed, or this isn't a git repository (`git rev-parse --is-inside-work-tree`
+  fails), skip silently — no error, no nagging.
+- Applies to **every** publish, not just an overwrite — it also protects against a bad AI edit
+  surviving only in a brand-new Artor version with no local git record.
+- If the commit itself fails (e.g. a pre-commit hook rejects it), report the failure and do
+  **not** proceed to `artor publish` past it silently.
 
 ## `pull` vs `remix`
 
