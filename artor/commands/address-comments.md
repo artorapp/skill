@@ -27,19 +27,37 @@ Make the changes in the prototype's source. If you need the exact code of the ve
 reviewed, `artor pull --ref <version>` it into the working tree (or a temp dir) first. Note the
 **thread IDs** you're addressing so you can resolve them in step 4.
 
-## 3. Re-publish
+## 3. Local safety checkpoint (if using git)
 
-Versions are **immutable**, so your fixes ship as the **next** version. Generate a changelog and
-publish (see `/artor:publish`):
+If this directory is a git repo with uncommitted changes, commit them locally first (full details:
+the skill's "Local safety checkpoint before publishing" section):
+
+```bash
+git add -A && git commit -m "artor: <summary of what you fixed>"
+```
+
+Local-only — never `git push`. Skip silently if git isn't installed or this isn't a repo.
+
+## 4. Re-publish
+
+Generate a changelog and publish (see `/artor:publish`). Most comment fixes are real changes and
+ship as a **new** version; if the fix was genuinely tiny (e.g. a one-word copy correction the
+reviewer flagged), it's fine to ask whether to overwrite the current alias instead — full decision
+logic: the skill's "Small tweaks: overwrite vs. new version" section.
 
 ```bash
 artor publish --message "<summary of what you fixed>"
+# — or, for a tiny fix the designer wants overwritten —
+artor publish -v <chosen-alias> --message "<summary of what you fixed>"
 ```
 
 Tell the reviewer the new version number / URL. Old comments stay anchored to the version they
-were left on.
+were left on (this holds whether the fix shipped as a new version or an overwrite of an existing
+alias — the `deploymentId` a thread is anchored to only changes if that specific alias's
+deployment was the one overwritten, so re-check `artor comments --version <ref>` if anything looks
+off before reporting).
 
-## 4. Resolve the addressed threads
+## 5. Resolve the addressed threads
 
 Once a comment is handled, mark its thread resolved (any member may; re-verified server-side):
 
