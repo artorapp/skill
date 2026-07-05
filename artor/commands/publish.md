@@ -47,24 +47,56 @@ changed" section.
 4. Show the user the draft and let them edit before confirming. A user-supplied `--message` **always
    wins** — never override it.
 
-## 3. Publish
+## 3. Small tweak? Consider overwriting instead of a new version
+
+From the diff above, judge the size of the change. Full decision + permission-fallback details:
+the skill's "Small tweaks: overwrite vs. new version" section. Short version:
+
+- **Small** (copy/text-only, a single style tweak, a typo fix) → ask which is wanted: overwrite the
+  current version in place (which alias — `latest` by default, confirm with the designer), or
+  publish as a new version. Overwrite needs the project owner or an org admin; a 403 falls back to
+  a normal new-version publish.
+- **Real** (new feature, new page/route, structural change) → skip this prompt, go straight to
+  step 4 and publish as a new version like normal.
+
+## 4. Local safety checkpoint (if using git)
+
+Full details: the skill's "Local safety checkpoint before publishing" section. Short version: if
+this directory is a git repo with uncommitted changes, commit them locally first (reusing the
+changelog text from step 2) so there's a rollback point:
+
+```bash
+git add -A && git commit -m "artor: <your changelog message>"
+```
+
+Local-only — never `git push`. Skip silently if git isn't installed or this isn't a repo. If the
+commit fails, report it and stop — don't proceed to step 5.
+
+## 5. Publish
 
 ```bash
 artor publish --message "<your summary>"     # alias: artor push
+# — or, if step 3 chose to overwrite —
+artor publish -v <chosen-alias> --message "<your summary>"
 rm -rf "$PREV"                                # clean up the temp snapshot
 ```
 
-Useful flags: `--label "<name>"`, `-v <alias>` (move a named alias, e.g. `staging`), `--no-build`
-(reuse a build), `--no-install`, `--static` / `--node` / `--entry <s>` (artifact type/entry),
-`--dir <path>` (non-standard output dir).
+Useful flags: `--label "<name>"`, `-v <alias>` (move a named alias, e.g. `staging`, or overwrite it
+in place — see step 3), `--no-build` (reuse a build), `--no-install`, `--static` / `--node` /
+`--entry <s>` (artifact type/entry), `--dir <path>` (non-standard output dir), `--no-sdk-update`
+(skip the review-widget update check).
 
 **Boot-test failure.** Before upload, Artor starts the app (`node <entry>`) and waits for it to
 listen. If it crashes, publish stops with the crash output. **Read it and fix the build.** Use
 `--no-smoke` **only** if the app legitimately needs live secrets/services to boot — never as a reflex
 to get past a real crash.
 
-## 4. Report
+**Web-sdk update prompt.** If publish asks about updating `@artorapp/web-sdk` (the review widget),
+recommend accepting it — see the skill's "Publishing notes" for why.
+
+## 6. Report
 
 State the assigned version number, the preview URL, and any aliases moved — exactly as printed. The
-URL is **members-only**. Versions are **immutable**: to update a shared link, move an alias, never
-re-publish over old bytes. To expose this version publicly, use `/artor:share`.
+URL is **members-only**. A new version is immutable; an overwritten one (step 3) replaces the
+previous content at that alias permanently — say clearly which happened. To expose this version
+publicly, use `/artor:share`.
