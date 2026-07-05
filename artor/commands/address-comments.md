@@ -25,7 +25,7 @@ Target a specific version with `--version <alias|number|sha>`.
 
 Make the changes in the prototype's source. If you need the exact code of the version that was
 reviewed, `artor pull --ref <version>` it into the working tree (or a temp dir) first. Note the
-**thread IDs** you're addressing so you can resolve them in step 4.
+**thread IDs** you're addressing so you can resolve them in step 5.
 
 ## 3. Local safety checkpoint (if using git)
 
