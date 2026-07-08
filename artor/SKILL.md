@@ -123,6 +123,7 @@ framework dependency (e.g. `next`), **not** the workspace root. The `.artor` lin
 | Pick install method interactively (TTY)       | `artor install`                                                         |
 | Update an installed skill/plugin              | `artor update-skill [claude-plugin\|skills]`                            |
 | Self-update the CLI                           | `artor update`                                                          |
+| Turn automatic CLI updates off / back on      | `artor update --off` / `artor update --on`                              |
 | Point the CLI at a local/custom dashboard     | `artor dev [--port N] [--url <http(s)>] [--verbose]` / `off` / `status` |
 
 - **Installing the skill.** `artor install-skills` installs the SKILL.md knowledge skill via
@@ -132,8 +133,17 @@ framework dependency (e.g. `next`), **not** the workspace root. The `.artor` lin
   **no** `curl | bash` install route in the CLI anymore. `artor update-skill [claude-plugin|skills]`
   refreshes an existing install.
 - **`artor update`** self-updates the CLI (it detects how it was installed and runs the right
-  package-manager command; never silent). If a command fails with HTTP 426, the CLI prints
-  "This CLI is too old for the Artor server. Run `artor update`." — run `artor update`, then retry.
+  package-manager command; never silent). Since 0.16.0 the CLI also **keeps itself current
+  automatically**: if a command fails with HTTP 426 (CLI below the server's floor), a global or
+  packaged install updates itself and **re-runs your command once** — you usually never see the
+  error. Only when that self-heal isn't possible (CI, `npx`/project-local install, opted out, or
+  the update failed) does it print "This CLI is too old for the Artor server. Run `artor update`."
+  — then run `artor update` and retry. Interactive non-CI commands also background-check for a
+  newer version after finishing (at most one install attempt per hour). Opt out with
+  `ARTOR_NO_AUTOUPDATE=1` (one run) or `artor update --off` (persistent; `--on` re-enables).
+  The reverse mismatch has its own honest error: "This server does not support the current
+  publish protocol" means the **server** is older than the CLI — ask the Artor operator to
+  update the server; no CLI action fixes it.
 - **`artor dev`** retargets the CLI at a non-prod dashboard for local development. Turning it on
   **or** off **clears the stored token + default org** (a token is environment-bound), so you must
   `artor login` again after every switch. `artor dev off` restores production. **Never run it in a

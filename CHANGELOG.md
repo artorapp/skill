@@ -7,6 +7,31 @@ uses pre-1.0 (0.x) semver — new user-visible capability bumps MINOR, fixes/doc
 After a version bump, users pull it with `claude plugin marketplace update artor && claude plugin
 update artor@artor` (update only fires on a version bump).
 
+## [0.11.0] - 2026-07-08
+
+Mirrors artor-cli **0.16.0** (streaming publish + automatic updates).
+
+### Added
+
+- **Automatic CLI updates documented.** The CLI now keeps itself current: an HTTP 426
+  ("CLI too old") self-heals on a global/packaged install — the CLI updates itself and
+  re-runs the failed command exactly once — so agents will usually never see the 426 error
+  at all. Interactive non-CI commands also background-check for a newer version after
+  finishing (at most one install attempt per hour). New command surface documented:
+  `artor update --off` / `artor update --on` (persistent opt-out/in) and the
+  `ARTOR_NO_AUTOUPDATE=1` one-run escape hatch.
+- **New troubleshooting row for the reverse mismatch.** "This server does not support the
+  current publish protocol" means the _server_ is older than the CLI (it predates the
+  streaming publish protocol); the fix is operator-side, not `artor update`. The skill now
+  tells agents to relay that to the user instead of retrying.
+
+### Changed
+
+- **426 guidance updated everywhere** (SKILL.md, troubleshooting reference, `/artor:doctor`):
+  seeing the manual "Run `artor update`" message now implies the self-heal couldn't run
+  (CI, `npx`/project-local install, auto-update off, or the update failed) — the manual fix
+  is the fallback, not the default path.
+
 ## [0.10.0] - 2026-07-05
 
 ### Added
