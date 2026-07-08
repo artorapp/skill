@@ -25,21 +25,43 @@ Target a specific version with `--version <alias|number|sha>`.
 
 Make the changes in the prototype's source. If you need the exact code of the version that was
 reviewed, `artor pull --ref <version>` it into the working tree (or a temp dir) first. Note the
-**thread IDs** you're addressing so you can resolve them in step 4.
+**thread IDs** you're addressing so you can resolve them in step 5.
 
-## 3. Re-publish
+## 3. Local safety checkpoint (if using git)
 
-Versions are **immutable**, so your fixes ship as the **next** version. Generate a changelog and
-publish (see `/artor:publish`):
+If this directory is a git repo with uncommitted changes, commit them locally first (full details:
+the skill's "Local safety checkpoint before publishing" section):
+
+```bash
+git add -A && git commit -m "artor: <summary of what you fixed>"
+```
+
+Local-only — never `git push`. Skip silently if git isn't installed or this isn't a repo. If the
+commit itself fails, report it and stop — don't proceed to publish.
+
+## 4. Re-publish
+
+Generate a changelog and publish (see `/artor:publish`). Most comment fixes are real changes and
+ship as a **new** version; if the fix was genuinely tiny (e.g. a one-word copy correction the
+reviewer flagged), it's fine to ask whether to overwrite the current alias instead — full decision
+logic: the skill's "Small tweaks: overwrite vs. new version" section.
 
 ```bash
 artor publish --message "<summary of what you fixed>"
+# — or, for a tiny fix the designer wants overwritten —
+artor publish -v <chosen-alias> --message "<summary of what you fixed>"
 ```
 
-Tell the reviewer the new version number / URL. Old comments stay anchored to the version they
-were left on.
+Tell the reviewer the new version number / URL. An overwrite keeps the same `deploymentId`, so
+existing comment threads stay attached but now overlay the changed content; a new-version publish
+leaves the old threads untouched on the old deployment. Re-check `artor comments --version <ref>`
+if anything looks off before reporting.
 
-## 4. Resolve the addressed threads
+**Caution:** re-publishing with an overwrite also turns off any public share pinned to that
+version — the designer would need to reshare to get a live link again. Mention this before
+overwriting if the version might be publicly shared.
+
+## 5. Resolve the addressed threads
 
 Once a comment is handled, mark its thread resolved (any member may; re-verified server-side):
 

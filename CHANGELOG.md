@@ -7,6 +7,53 @@ uses pre-1.0 (0.x) semver — new user-visible capability bumps MINOR, fixes/doc
 After a version bump, users pull it with `claude plugin marketplace update artor && claude plugin
 update artor@artor` (update only fires on a version bump).
 
+## [0.11.0] - 2026-07-08
+
+Mirrors artor-cli **0.16.0** (streaming publish + automatic updates). Also ships the
+version-hygiene work that was authored against a parallel "0.10.0" branch but never released
+(the published 0.10.0 was the CLI-0.15.0 docs release), folded in here.
+
+### Added
+
+- **Automatic CLI updates documented.** The CLI now keeps itself current: an HTTP 426
+  ("CLI too old") self-heals on a global/packaged install — the CLI updates itself and
+  re-runs the failed command exactly once — so agents will usually never see the 426 error
+  at all. Interactive non-CI commands also background-check for a newer version after
+  finishing (at most one install attempt per hour). New command surface documented:
+  `artor update --off` / `artor update --on` (persistent opt-out/in) and the
+  `ARTOR_NO_AUTOUPDATE=1` one-run escape hatch.
+- **New troubleshooting row for the reverse mismatch.** "This server does not support the
+  current publish protocol" means the _server_ is older than the CLI (it predates the
+  streaming publish protocol); the fix is operator-side, not `artor update`. The skill now
+  tells agents to relay that to the user instead of retrying.
+- **Small-tweak overwrite prompt.** Before publishing, the AI now judges whether a change is a
+  tiny tweak (copy/text-only, a single style change, a typo fix) or a real change. For a tiny
+  tweak, it asks whether to overwrite the current version in place (confirming which alias, e.g.
+  `latest` or `staging`) instead of minting a permanent new version — this is meant to slow the
+  version-number bloat that comes from publishing after every trivial AI-driven edit. A real
+  change still always publishes as a new version, no extra prompt. Overwriting requires the
+  project owner or an org admin; a 403 falls back to a normal new-version publish, reported
+  plainly to the designer. Overwriting also turns off any public share pinned to that version
+  (the designer must reshare for a live link again) — the skill now calls this out before
+  offering to overwrite.
+- **Local git safety checkpoint before every publish.** If the working directory is a git repo
+  with uncommitted changes, the skill now commits them locally (reusing the drafted changelog
+  message) before running `artor publish` — a rollback point for a bad AI edit or a version
+  overwrite gone wrong. Local-only, never pushed; skipped silently if git isn't installed or this
+  isn't a repo.
+- **Git vs. Artor role clarified.** `SKILL.md` now states plainly that Artor's version list is
+  for sharing/reviewing prototypes, not a substitute for commit history — git remains the source
+  of truth, especially now that a version can be intentionally overwritten.
+- **Recommend accepting the web-sdk update prompt.** The skill now tells agents to recommend
+  accepting the publish-time `@artorapp/web-sdk` update prompt when offered.
+
+### Changed
+
+- **426 guidance updated everywhere** (SKILL.md, troubleshooting reference, `/artor:doctor`):
+  seeing the manual "Run `artor update`" message now implies the self-heal couldn't run
+  (CI, `npx`/project-local install, auto-update off, or the update failed) — the manual fix
+  is the fallback, not the default path.
+
 ## [0.10.0] - 2026-07-05
 
 ### Added

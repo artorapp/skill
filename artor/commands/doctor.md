@@ -52,7 +52,8 @@ artor org list
 ## 6. Match the error → fix
 
 Take the exact CLI error string and look it up in the skill's troubleshooting reference (e.g. HTTP
-426 → `artor update`; boot smoke test failed → read the crash, fix the build; `pull failed
+426 → `artor update` — 0.16.0+ normally self-heals this automatically, so seeing it means the
+auto-update couldn't run; boot smoke test failed → read the crash, fix the build; `pull failed
 (HTTP …)` → read the relayed server message; `Already linked … --force`). Apply the matched fix.
 
 ## Wrap up
