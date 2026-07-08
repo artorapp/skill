@@ -89,7 +89,7 @@ rm -rf "$PREV"                                # clean up the temp snapshot
 Useful flags: `--label "<name>"`, `-v <alias>` (move a named alias, e.g. `staging`, or overwrite it
 in place — see step 3), `--no-build` (reuse a build), `--no-install`, `--static` / `--node` /
 `--entry <s>` (artifact type/entry), `--dir <path>` (non-standard output dir), `--no-sdk-update`
-(skip the review-widget update check).
+(skip the `@artorapp/web-sdk` review-widget update check — see the skill's "Publishing notes").
 
 **Boot-test failure.** Before upload, Artor starts the app (`node <entry>`) and waits for it to
 listen. If it crashes, publish stops with the crash output. **Read it and fix the build.** Use

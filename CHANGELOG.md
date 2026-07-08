@@ -9,7 +9,9 @@ update artor@artor` (update only fires on a version bump).
 
 ## [0.11.0] - 2026-07-08
 
-Mirrors artor-cli **0.16.0** (streaming publish + automatic updates).
+Mirrors artor-cli **0.16.0** (streaming publish + automatic updates). Also ships the
+version-hygiene work that was authored against a parallel "0.10.0" branch but never released
+(the published 0.10.0 was the CLI-0.15.0 docs release), folded in here.
 
 ### Added
 
@@ -24,18 +26,6 @@ Mirrors artor-cli **0.16.0** (streaming publish + automatic updates).
   current publish protocol" means the _server_ is older than the CLI (it predates the
   streaming publish protocol); the fix is operator-side, not `artor update`. The skill now
   tells agents to relay that to the user instead of retrying.
-
-### Changed
-
-- **426 guidance updated everywhere** (SKILL.md, troubleshooting reference, `/artor:doctor`):
-  seeing the manual "Run `artor update`" message now implies the self-heal couldn't run
-  (CI, `npx`/project-local install, auto-update off, or the update failed) — the manual fix
-  is the fallback, not the default path.
-
-## [0.10.0] - 2026-07-05
-
-### Added
-
 - **Small-tweak overwrite prompt.** Before publishing, the AI now judges whether a change is a
   tiny tweak (copy/text-only, a single style change, a typo fix) or a real change. For a tiny
   tweak, it asks whether to overwrite the current version in place (confirming which alias, e.g.
@@ -54,18 +44,35 @@ Mirrors artor-cli **0.16.0** (streaming publish + automatic updates).
 - **Git vs. Artor role clarified.** `SKILL.md` now states plainly that Artor's version list is
   for sharing/reviewing prototypes, not a substitute for commit history — git remains the source
   of truth, especially now that a version can be intentionally overwritten.
-- **Recommend accepting the web-sdk update prompt.** Mirrors artor-cli's new publish-time check
-  for a newer `@artorapp/web-sdk` (the review widget) — the skill now tells agents to recommend
-  accepting it when offered, and documents the new `--no-sdk-update` flag.
+- **Recommend accepting the web-sdk update prompt.** The skill now tells agents to recommend
+  accepting the publish-time `@artorapp/web-sdk` update prompt when offered.
+
+### Changed
+
+- **426 guidance updated everywhere** (SKILL.md, troubleshooting reference, `/artor:doctor`):
+  seeing the manual "Run `artor update`" message now implies the self-heal couldn't run
+  (CI, `npx`/project-local install, auto-update off, or the update failed) — the manual fix
+  is the fallback, not the default path.
+
+## [0.10.0] - 2026-07-05
+
+### Added
+
+- **Documents `artor init`'s git auto-init** — `init` now auto-runs `git init` (+ a starter
+  `.gitignore`) when the folder isn't already inside a repository, best-effort so a failure only
+  warns and never blocks linking. Documented in the "First check" section and the project-lifecycle
+  command-reference row, with the new `--no-git` opt-out flag.
+- **Documents the publish-time `@artorapp/web-sdk` update check** — `artor publish` now checks npm
+  for a newer review-widget SDK version when the project still pins `"latest"` (what `init` writes)
+  and offers to update it before building. Never blocks or fails a publish: asks on a TTY, updates
+  silently with `--yes`, skips silently with no TTY and no `--yes`; an explicit version pin is left
+  alone. Documented in "Publishing notes", the publish command-reference row, and
+  `commands/publish.md`'s flag list, with the new `--no-sdk-update` opt-out flag.
 
 ### Notes
 
-- Mirrors `artor-cli`'s new publish-time web-sdk update check (`--no-sdk-update` flag, an
-  interactive update prompt when the dependency is still pinned to `"latest"`). MINOR bump — new
-  user-visible capability across three of the skill's command files.
-- Version `0.9.0` is intentionally skipped: it is claimed by an in-flight change (the
-  address-comments ai-ignore work) still open as a separate PR at release time, so this release
-  takes `0.10.0` to avoid a version collision.
+- Mirrors `artor-cli` 0.15.0 (PR #184: publish-time web-sdk update check + `artor init` git
+  auto-init). MINOR bump — documents new CLI behavior, no skill logic changes.
 
 ## [0.8.0] - 2026-07-02
 
