@@ -10,9 +10,8 @@ update artor@artor` (update only fires on a version bump).
 ## [0.14.0] - 2026-07-10
 
 Documents `artor dump` (previously absent from the skill) and its new plan-limited **dump
-credits**, mirroring the artor-cli release that adds the credit check (0.18.0 on the
-`feat/dormant-org-expiry` branch; if that number collides with the scoped env/mock release
-below at publish time, the CLI re-bumps - the behavior documented here is unchanged).
+credits**, mirroring artor-cli **0.17.1** (the dump-credit release; 0.18.0 remains the scoped
+env/mock release documented in 0.13.0 below).
 
 ### Added
 
