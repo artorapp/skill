@@ -7,6 +7,28 @@ uses pre-1.0 (0.x) semver — new user-visible capability bumps MINOR, fixes/doc
 After a version bump, users pull it with `claude plugin marketplace update artor && claude plugin
 update artor@artor` (update only fires on a version bump).
 
+## [0.14.0] - 2026-07-10
+
+Documents `artor dump` (previously absent from the skill) and its new plan-limited **dump
+credits**, mirroring the artor-cli release that adds the credit check (0.18.0 on the
+`feat/dormant-org-expiry` branch; if that number collides with the scoped env/mock release
+below at publish time, the CLI re-bumps - the behavior documented here is unchanged).
+
+### Added
+
+- **`artor dump` in the project-lifecycle command table.** Bulk-exports the source of every
+  project in the active org to `<out>/<slug>/v<version>/` (default `./artor-dump`), latest
+  version only unless `--all-versions`; existing files are never overwritten. The skill never
+  documented this command before, so agents had no way to reach the whole-org export.
+- **Dump-credit semantics in the `pull` vs `remix` section** (now `pull` vs `remix` vs
+  `dump`). Each run spends one plan-limited credit (Free: 2 per month; paid plans: 1 per
+  24 hours; operators can tune both per org). Over the allowance the CLI prints
+  `Dump allowance used. Next dump available in Xh Ym.` and exits 1 without downloading
+  anything; on success it prints how many dumps remain in the window.
+- **Agent guidance for the over-limit case:** relay the allowance message to the user
+  verbatim and do NOT retry in a loop; the wait time is real. For a single project's code,
+  always prefer `artor pull` - it is unmetered.
+
 ## [0.13.0] - 2026-07-10
 
 Mirrors artor-cli **0.18.0** (scoped env vars, revisioned/scoped mocks, publish-time mock drift

@@ -66,6 +66,7 @@ framework dependency (e.g. `next`), **not** the workspace root. The `.artor` lin
 | Attach this dir to an EXISTING project   | `artor link [<id\|slug>] [--org <slug>] [--force]`                                 |
 | Detach this dir (local-only, keeps code) | `artor unlink [--all] [--skills] [--npmrc] [--link-only]`                          |
 | Download a version's source, stay linked | `artor pull [--ref <r>] [--dir <p>] [--project <slug>] [--force]`                  |
+| Bulk-export source of EVERY org project  | `artor dump [--all-versions] [--out <dir>]`                                        |
 | Fork a project into a NEW one you own    | `artor remix <project> [name] [--name <n>] [--org <slug>] [--ref <r>] [--dir <p>]` |
 | Rename a project's display name          | `artor rename [<slug>] "New Name"`                                                 |
 | Trash a project (recoverable 30 days)    | `artor rm [<slug>] [--yes]`                                                        |
@@ -303,6 +304,13 @@ or a subsequent version overwrite (above), turns out wrong.
 - **`artor remix <project>`** forks into a **brand-new project you own** (like `git clone`),
   recording what it was forked from. Use it to branch off someone else's prototype. Remix does **not**
   install deps or build — cd in, install, then `artor publish`.
+- **`artor dump [--all-versions] [--out <dir>]`** bulk-exports the source of **every project in
+  the org** to `<out>/<slug>/v<version>/` (default `./artor-dump`, latest version only unless
+  `--all-versions`; never overwrites existing files). Each run spends one plan-limited **dump
+  credit** — over the allowance it prints `Dump allowance used. Next dump available in Xh Ym.`
+  and exits 1 without downloading. On success it prints how many dumps remain in the window.
+  Relay that message to the user verbatim; don't retry in a loop. Single-project `pull` has no
+  allowance, so for ONE project's code always prefer `pull`.
 
 ## Describe what changed (AI changelog generation)
 
