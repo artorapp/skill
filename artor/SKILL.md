@@ -85,6 +85,7 @@ framework dependency (e.g. `next`), **not** the workspace root. The `.artor` lin
 | Skip the web-sdk update check (see notes)   | `artor publish --no-sdk-update`                            |
 | Force artifact type / entry / output dir    | `artor publish --static\|--node [--entry <s>] [--dir <p>]` |
 | Skip the boot smoke test (see notes)        | `artor publish --no-smoke`                                 |
+| Resolve local-vs-server mock drift (see notes) | `artor publish --mocks=local\|server`                    |
 | Open the latest / a specific version        | `artor open` / `artor open --version 3` / `--alias <name>` |
 | Get the preview URL without a browser       | `artor open --json` (prints `{ "url": … }`, no launch)     |
 | Read review comments on a version           | `artor comments [--version <ref>] [--open] [--json]`       |
@@ -101,15 +102,25 @@ framework dependency (e.g. `next`), **not** the workspace root. The `.artor` lin
 | Extend a live link                      | `artor share extend <shareId> [--days N]`                    |
 | Turn a link off (dead, not "revoke")    | `artor share off <shareId>`                                  |
 
-**Org knowledge** (set/admin actions need an owner/admin role — details: `references/org-admin.md`)
+**Org/project/version knowledge** (set/admin actions need an owner/admin role at org scope, a
+publisher seat at project/version scope — details: `references/org-admin.md`)
 
 | Goal                                         | Command                                                                                      |
 | -------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| Set / list / remove env vars                 | `artor env set KEY=VALUE [--local]` / `list` / `rm KEY` / `pull`                             |
-| Mock datasets (fallback at `/__mock/<name>`) | `artor mock set <name> <file.json>` / `list` / `rm` / `promote <name>`                       |
+| Set / list / remove env vars                 | `artor env set KEY=VALUE [--local]` / `list [--json]` / `rm KEY` / `pull` `[--org \| --version <ref>]` |
+| Mock datasets (fallback at `/__mock/<name>`) | `artor mock set <name> <file.json>` / `list [--json]` / `rm <name>` / `revisions <name>` / `pin <name> <sha> --version <ref>` / `pull` / `status [--json]` / `promote <name> [--ref <r>]` `[--org \| --version <ref>]` |
 | Org skills (pinned git sources)              | `artor skill add <gh-url> [--name X] [--ref <r>] [--credential <t>] [--enforced]` / …        |
 | Org starter templates                        | `artor template push --name X [--slug y] [--desc z]` / `list`                                |
 | Private registry providers                   | `artor registry add <@scope> --type azure\|npmjs [--name <l>] [--expires <d>]` / … / `login` |
+
+**Behavior change (this release): `env`/`mock`'s default scope inside a linked folder is now the
+LINKED PROJECT, not the org.** Running `artor env set` / `artor mock set` (etc.) from a linked
+directory with no scope flag now targets that one prototype, not every prototype in the org. Pass
+`--org` to reach the old org-wide target, or `--version <ref>` to narrow to one immutable version.
+Outside a linked directory, a mutating verb (`set`/`rm`/`pin`) with no `--org` is a loud error —
+there is no silent org-wide fallback. `artor env pull` inside a linked folder now returns the
+**project + org merged** effective set (previously org-only); pass `--org` to restore the old
+org-only pull.
 
 **Operator** (platform super-admins only — set via `ARTOR_SUPERADMINS`; details: `references/org-admin.md`)
 
@@ -202,6 +213,36 @@ framework dependency (e.g. `next`), **not** the workspace root. The `.artor` lin
   npm for a newer version and offers to update it before building. It never blocks or fails a
   publish — it asks on a TTY, updates silently with `--yes`, and skips the check with no TTY and no
   `--yes`. An explicit version pin is left alone. Pass `--no-sdk-update` to skip the check entirely.
+- **Mock drift gate.** Before building, `artor publish` diffs the project's local `./mocks/*.json`
+  files against the linked project's server-effective mock bindings. A name present on only one
+  side is never a conflict (it just publishes as-is / survives untouched); a name present on
+  **both** sides with **different** content is a real conflict, resolved per-name to "keep local"
+  or "use server": `--mocks=local` / `--mocks=server` answers every conflict the same way with no
+  prompt; on a TTY with no flag you're prompted per conflict; **off a TTY with no flag and a real
+  conflict, publish fails loud asking for `--mocks=`** — there's no safe silent default, since
+  either side could clobber a real edit. No local `mocks/` dir at all skips the check entirely.
+
+## Env vars and mocks: org, project, or version scope
+
+`artor env` and `artor mock` both target one of three scopes via the same flags:
+
+- **No flag, inside a linked project** → the **project** (every version of that one prototype).
+- **`--org`** → the whole org (every node-server deployment, unless overridden).
+- **`--version <ref>`** → exactly one immutable version (`<ref>` is an alias, version number, or
+  content hash — the same grammar as `open`/`comments`/`logs`).
+
+Precedence at read/serve time is **version > project > org** for both, but they differ in *when*
+that resolution happens:
+
+- **Env vars are a live merge at every container cold start** — rotating or deleting an org/project
+  var takes effect on the container's *next* boot, no republish needed. The trade-off: an inherited
+  var can change behavior for an already-published version if the org/project row it depends on
+  later changes. Pin a value at that version's own scope if it must never drift.
+- **Mocks are snapshotted once, at publish time** — publishing a version resolves
+  bundled > project > org and writes an immutable pin; editing the org/project mock afterward only
+  affects the *next* publish, never a version already shipped. `artor mock pin <name> <sha>
+  --version <ref>` is the deliberate escape hatch to repoint an already-published version's mock
+  without a republish (look up the sha with `artor mock revisions <name>`).
 
 ## Small tweaks: overwrite vs. new version
 

@@ -7,6 +7,79 @@ uses pre-1.0 (0.x) semver — new user-visible capability bumps MINOR, fixes/doc
 After a version bump, users pull it with `claude plugin marketplace update artor && claude plugin
 update artor@artor` (update only fires on a version bump).
 
+## [0.13.0] - 2026-07-10
+
+Mirrors artor-cli **0.18.0** (scoped env vars, revisioned/scoped mocks, publish-time mock drift
+gate). `artor env` and `artor mock` now both target one of three scopes — org, project, or a
+single immutable version — and inside a linked project their default scope **changed** from org
+to project. Mocks also gained a full revision history and a per-version pin escape hatch.
+
+### Changed
+
+- **Breaking default-scope change, documented prominently.** Inside a linked project directory,
+  `artor env set|list|rm` and `artor mock set|list|rm` now default to the **linked project's**
+  scope instead of the org's. An agent that used to run `artor env set KEY=VALUE` expecting an
+  org-wide write must now pass `--org` explicitly to get that behavior; unqualified, the same
+  command now only affects the one linked prototype. Called out with its own callout box in
+  `SKILL.md` right under the org/project/version command table, and reflected in
+  `references/org-admin.md`'s env/mock sections and `references/troubleshooting.md`.
+- **`artor env pull` inside a linked project now returns the project + org merged effective
+  set** (previously org-only). `--org` restores the old org-only pull. The empty-result message
+  also changed from "for this org" to "at this scope" to match (both docs and the CLI's exact
+  string were updated together).
+- **`references/org-admin.md`** env/mock sections rewritten around the shared three-scope model
+  (no flag → project when linked; `--org` → org; `--version <ref>` → one immutable version),
+  including the permission split: org-scope `set`/`rm` stays admin-only, project/version-scope
+  `set`/`rm`/`pin` only needs a publisher seat (mirrors the `artor publish` gate). `list` /
+  `revisions` / `status` stay any-member reads at any scope.
+- **`commands/org-setup.md`** (the `/artor:org-setup` admin-onboarding walkthrough) now adds an
+  explicit `--org` to every `env`/`mock` example command, with a callout at the top explaining
+  why — this walkthrough is org-wide setup, and the commands would otherwise silently target
+  the linked project instead under the new default.
+
+### Added
+
+- **New mock verbs documented: `artor mock revisions <name>` and `artor mock pin <name> <sha>
+  --version <ref>`.** `revisions` lists a name's edit history at org or project scope (sha,
+  author, date, and which live versions currently use it) — it works at org/project scope only
+  since a version pins exactly one sha, not a history (`--version` is rejected loudly). `pin`
+  repoints an **already-published** version's mock binding to an existing revision sha with
+  **no republish** — the documented escape hatch for "the data I already shipped was wrong, fix
+  it in place." Both added to the command reference table and the org-admin deep-dive.
+- **New mock verb documented: `artor mock status [--json]`.** Diffs the linked project's local
+  `./mocks/*.json` files against its server-effective bindings with no writes — `local only` /
+  `server only` / `modified` per name. This is the same diff the publish-time drift gate (below)
+  runs automatically; `status` lets an agent check it ahead of time.
+- **New section: "Env vars and mocks: org, project, or version scope"** in `SKILL.md`. Explains
+  the shared scope-flag grammar (`--org` / `--version <ref>` / no-flag-means-project-when-linked)
+  and, critically, the **asymmetry in when resolution happens**: env vars are a live merge at
+  every container cold start (rotating an org/project var takes effect on the next boot, no
+  republish, but can change behavior for an old already-published version that depends on it);
+  mocks are snapshotted **once**, at publish time, into an immutable per-version binding (editing
+  the org/project mock afterward only affects the *next* publish — `artor mock pin` is the
+  deliberate exception that repoints an already-shipped version's binding directly).
+- **New publish flag documented: `artor publish --mocks=local|server`.** Added to the publish
+  command table and a new "Mock drift gate" bullet under "Publishing notes." Before building,
+  `artor publish` diffs local `./mocks/*.json` against the linked project's server-effective
+  mock bindings; a name on only one side is never a conflict, but a name with **different**
+  content on both sides is — `--mocks=local`/`--mocks=server` resolves every conflict the same
+  way with no prompt (required off a TTY when a real conflict exists — the CLI fails loud
+  asking for the flag rather than picking a silent default that could clobber either side's
+  edit); on a TTY with no flag, each conflict prompts interactively. No local `mocks/` dir
+  skips the check entirely.
+- **New troubleshooting rows**, all keyed to exact CLI strings: the unlinked-directory loud
+  error (`Not in a linked project. Run inside one, or pass --org for the org scope.`) for a
+  mutating `env`/`mock` verb; a "used to touch the whole org, now touches one project" entry
+  pointing at the default-scope change; ``mock revisions works at org or project scope only;
+  --version is not supported``; and the non-TTY publish mock-drift failure asking for
+  `--mocks=`.
+
+### Fixed
+
+- `references/troubleshooting.md`'s `env pull` empty-result row updated to the CLI's current
+  exact string (`No local (pullable) env vars at this scope. Nothing to write.`, was "for this
+  org") so the table stays a verbatim match, not a paraphrase.
+
 ## [0.12.0] - 2026-07-09
 
 Mirrors artor-cli **0.17.0** (runtime crash logs). An agent can now retrieve the actual stack

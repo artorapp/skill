@@ -1,45 +1,85 @@
 # Org admin deep-dive
 
 Org knowledge (env vars, mock datasets, org skills, templates, private registries) is scoped to the
-**org of the linked directory**. Setting/removing most of it needs an **owner or admin** role;
-admin-gated verbs are marked below. Confirm intent before each write, and report exactly what was
-configured.
+**org of the linked directory** (env vars and mocks can also be scoped narrower — see below).
+Setting/removing most of it needs an **owner or admin** role; admin-gated verbs are marked below.
+Confirm intent before each write, and report exactly what was configured.
 
 ## Env vars — `artor env`
 
-Org-scoped configuration. Two visibility classes:
+Both `env` and `mock` (below) share the same three-level scope model and flag grammar:
+
+- **No flag, run inside a linked project** → the **project** scope (every version of that one
+  prototype). This is the default — a behavior change from earlier releases, which defaulted to
+  the org; see the CLI changelog.
+- **`--org`** → the org scope (every node-server deployment in the org, unless overridden by a
+  project or version row).
+- **`--version <ref>`** → exactly one immutable version's scope (`<ref>` = alias, version number,
+  or content hash).
+- Outside a linked project, `set`/`rm` (and `mock set`/`rm`/`pin`) with no `--org` are a **loud
+  error** — "Not in a linked project. Run inside one, or pass --org for the org scope." There is no
+  silent org-wide fallback for a mutating verb.
+- **Permission depends on the resolved scope, not how it was reached:** org scope is **admin-only**
+  for `set`/`rm`; project or version scope only needs a **publisher seat** (mirrors `artor
+  publish`'s gate) — any publisher can manage the config of a prototype they're actively working on.
+  `list`/`revisions`/`status` are any member at any scope.
+
+Two visibility classes for env vars:
 
 - **`--local` → `local (pullable)`** — downloadable to laptops via `artor env pull`.
 - **default (no `--local`) → `server-only`** — injected into node-server containers at start, and
   **never** downloadable.
 
 ```bash
-artor env set KEY=VALUE [--local]   # set (local/pullable) or server-only (default)
-artor env list                      # (alias ls) — names + class ONLY; values are write-only
-artor env rm KEY                     # (alias remove)
-artor env pull                       # write pullable vars to ./.env.local
+artor env set KEY=VALUE [--local]   [--org | --version <ref>]  # local/pullable or server-only (default)
+artor env list [--json]             [--org | --version <ref>]  # (alias ls) — names + class ONLY
+artor env rm KEY                     [--org | --version <ref>]  # (alias remove)
+artor env pull                       # linked project's EFFECTIVE (project + org merged) vars
+                                      # -> ./.env.local; org-only when not linked; --org restores
+                                      # the old org-only pull; no --version variant
 ```
 
 - **Values are write-only** — `list` returns names + class, never the value.
+- **Resolution is a live merge at every container cold start** — `version > project > org` — so
+  rotating/deleting an inherited var takes effect on the *next* boot, never requiring a republish.
+  This is the deliberate opposite of mocks (below), which snapshot at publish time.
 - **`env pull`** writes a **managed block** into `./.env.local` (mode `0600`), preserving your own
-  hand-added lines outside the block. Empty pull prints `No local (pullable) env vars for this org.
-  Nothing to write.`
+  hand-added lines outside the block. Empty pull prints `No local (pullable) env vars for this
+  scope. Nothing to write.`
 - Values containing `"` or a trailing `\` are rejected loudly.
 
 ## Mock datasets — `artor mock`
 
-Org-level fixtures served at `/__mock/<name>` — but only as a **fallback**: a deployment that bundles
-its own `mocks/<name>.json` **wins** over the org dataset (fallback, not override).
+Fixtures served at `/__mock/<name>` — but only as a **fallback**: a deployment that bundles its own
+`mocks/<name>.json` wins over a project/org mock, at snapshot time (see below).
 
 ```bash
-artor mock set <name> <file.json>    # upload; server validates (no CLI-side checks)
-artor mock list                      # (alias ls) — name + bytes
-artor mock rm <name>                  # (alias remove)
-artor mock promote <name> [--ref <r>] # copy this version's bundled mocks/<name>.json into the org dataset
+artor mock set <name> <file.json>    [--org | --version <ref>]  # upload; server validates
+artor mock list [--json]             [--org | --version <ref>]  # (alias ls) — name + bytes
+artor mock rm <name>                  [--org | --version <ref>]  # (alias remove)
+artor mock revisions <name>          [--org]                     # edit history: sha, author,
+                                      # date, which live versions use it (org or project scope
+                                      # only — a version has exactly one pin, not a history)
+artor mock pin <name> <sha> --version <ref>
+                                      # repoint an already-PUBLISHED version's binding to an
+                                      # existing revision sha — no republish
+artor mock pull                      # linked project's effective mocks -> ./mocks/*.json
+artor mock status [--json]           # diff ./mocks/*.json against the linked project, no writes
+artor mock promote <name> [--ref <r>] # copy a version's bundled mocks/<name>.json into the org dataset
 ```
 
+- **Snapshotted at publish time, not a live merge (unlike env vars).** Publishing a version
+  resolves `bundled > project > org` **once**, per name, and writes an immutable version binding —
+  editing the org/project mock afterward never changes an already-published version's served data,
+  only what the *next* publish snapshots. `artor mock pin` is the deliberate escape hatch to repoint
+  an already-shipped version without a republish.
+- `pull`/`status`/`revisions` work on the **linked project only** — no `--org`/`--version` variant
+  (they reject those flags loudly rather than silently ignoring them; `revisions` does accept
+  `--org` to read the org's history instead of the project's).
 - `promote` requires a **linked project**; `--ref` defaults to `latest`. It copies the published
   version's bundled `mocks/<name>.json` into the org dataset.
+- Get a sha to pin with `artor mock revisions <name>`, then `artor mock pin <name> <sha> --version
+  <ref>`.
 
 ## Org skills — `artor skill`
 
