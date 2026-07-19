@@ -7,6 +7,49 @@ uses pre-1.0 (0.x) semver — new user-visible capability bumps MINOR, fixes/doc
 After a version bump, users pull it with `claude plugin marketplace update artor && claude plugin
 update artor@artor` (update only fires on a version bump).
 
+## [0.15.0] - 2026-07-19
+
+Documents **slide decks**, a second Artor project kind, mirroring artor-cli **0.18.0**'s slides
+support (`artor init --slides` / `artor slides init`). Decks reuse the exact same version,
+alias, preview, share, and comment machinery as prototypes — the skill's biggest addition here
+is explaining the two places that differ: static-only enforcement and per-kind folders.
+
+### Added
+
+- **New project-lifecycle row: create + link a slide deck.** `artor init --slides` (canonical)
+  or `artor slides init` (alias — same options as `init`, appends `--slides` exactly once even
+  if already passed) creates a slides-kind project. Added to the command reference table in
+  `SKILL.md` right under the plain `artor init` row.
+- **New section "Slide decks (a second project kind)" in `SKILL.md`**, covering:
+  - Everything else (versions, aliases, preview URLs, sharing, comments) is unchanged — a deck
+    is a project whose `kind` is `"slides"` instead of `"prototype"`.
+  - **Static-only, enforced both ends.** `artor publish --node` (or an auto-detected
+    node-server framework) inside a slides project fails client-side, before any build or
+    upload, with the exact message: "This is a slides project: only static bundles can be
+    published. Remove --node or use a static build." An old CLI that predates this check
+    instead gets the server's own `400 slides_static_only` — never a crash, no
+    `ARTOR_CLI_MIN_VERSION` bump was needed.
+  - **Folders are per-kind.** Inside a slides project, `artor folder ...` automatically targets
+    slides folders — its own separate "Draft" default, never the prototype Draft. The
+    interactive folder picker in `init`/`slides init` asks "Where should this slide deck live?"
+    and lists only slides folders.
+  - **A deck can exist with no local checkout.** The dashboard supports dropping an `.html` file
+    or a `.zip` (with `index.html` at its root) directly onto a slides folder to publish a new
+    deck or a new version, with no CLI involved. `artor pull --project <slug>` (and
+    `remix`/`rename`/`rm`) work on such a deck exactly like any prototype — project
+    listing/lookup commands resolve across both kinds by default.
+  - **No env vars, no mocks** — both only ever apply to node-server containers, so a static
+    deck has neither code path and there's no "disable" flag to look for.
+- **`artor/commands/publish.md`** (the `/artor:publish` walkthrough) gained a precondition
+  callout: if the linked project is a slide deck, don't retry a failed `--node` publish — the
+  project is static-only, publish as static instead.
+- **`artor/references/org-admin.md`**'s folders section gained a note that folders are
+  strictly per-kind: a slide deck's folders (including its own Draft) are entirely separate
+  from a prototype's, with no cross-kind folder move.
+- **`SKILL.md` frontmatter description** now mentions slide decks alongside prototypes/web apps
+  so the skill triggers on "ship a deck" / "publish this deck" phrasing, not just prototype
+  language.
+
 ## [0.14.0] - 2026-07-10
 
 Documents `artor dump` (previously absent from the skill) and its new plan-limited **dump

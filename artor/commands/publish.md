@@ -19,6 +19,10 @@ artor status
 - If this dir isn't linked (`.artor/project.json` missing), run `artor init` first (or
   `/artor:start-here` for the full first-run flow).
 - If not signed in, `artor login`.
+- **Slide deck project?** A project created via `artor init --slides` / `artor slides init` is
+  static-only. `--node` (or an auto-detected node-server framework) fails immediately with "This
+  is a slides project: only static bundles can be published. Remove --node or use a static
+  build." — don't retry with `--node`, publish as static instead.
 
 ## 2. Generate a changelog (default, unless the user gave `--message`)
 

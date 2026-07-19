@@ -1,6 +1,6 @@
 ---
 name: artor
-description: Use when a user wants to publish, deploy, ship, or version a prototype or web app on Artor, or says "publish this", "deploy this prototype", "put this online", "ship a version", "get me a preview/demo link"; when they want to share it publicly ("share this", "send this to my team", "public link"); when they want to fork or copy someone's prototype ("remix this", "fork this"); when they ask what reviewers said or want to act on review comments ("what did reviewers say", "address the feedback"); when they want to restore, rename, or organize a prototype; or when they mention the artor CLI, .artor/project.json, or an Artor preview URL.
+description: Use when a user wants to publish, deploy, ship, or version a prototype, slide deck, or web app on Artor, or says "publish this", "deploy this prototype", "put this online", "ship a version", "ship a deck", "get me a preview/demo link"; when they want to share it publicly ("share this", "send this to my team", "public link"); when they want to fork or copy someone's prototype ("remix this", "fork this"); when they ask what reviewers said or want to act on review comments ("what did reviewers say", "address the feedback"); when they want to restore, rename, or organize a prototype or deck; or when they mention the artor CLI, .artor/project.json, or an Artor preview URL.
 ---
 
 # Artor
@@ -62,6 +62,7 @@ framework dependency (e.g. `next`), **not** the workspace root. The `.artor` lin
 | Goal                                     | Command                                                                            |
 | ---------------------------------------- | ---------------------------------------------------------------------------------- |
 | Create + link a project here             | `artor init [--name "My App"] [--folder <f>] [--org <slug>] [--no-git]`            |
+| Create + link a **slide deck**           | `artor init --slides [...]` (canonical) or `artor slides init [...]` (alias)        |
 | Scaffold from an org template            | `artor init --template <slug> [--here] [--no-install]`                             |
 | Attach this dir to an EXISTING project   | `artor link [<id\|slug>] [--org <slug>] [--force]`                                 |
 | Detach this dir (local-only, keeps code) | `artor unlink [--all] [--skills] [--npmrc] [--link-only]`                          |
@@ -164,6 +165,32 @@ org-only pull.
   **or** off **clears the stored token + default org** (a token is environment-bound), so you must
   `artor login` again after every switch. `artor dev off` restores production. **Never run it in a
   normal designer workflow** — it will log you out of prod.
+
+## Slide decks (a second project kind)
+
+`artor init --slides` (canonical) or `artor slides init` (alias — same options, appends
+`--slides` to `init` exactly once even if you already passed it) creates a **slide deck**
+instead of a prototype. Everything else — versions, aliases, preview URLs, sharing, comments —
+works identically; a deck is just a project whose `kind` is `"slides"` instead of `"prototype"`.
+
+- **Static-only, enforced both ends.** A slides project can only ever publish a **static**
+  bundle. `artor publish --node` (or an auto-detected node-server framework) inside a slides
+  project fails **client-side, before any build or upload**: "This is a slides project: only
+  static bundles can be published. Remove --node or use a static build." An old CLI that
+  predates this check gets the server's own `400 slides_static_only` instead — never a crash.
+- **Folders are per-kind.** Inside a slides project, `artor folder ...` automatically targets
+  **slides** folders — its own "Draft" default, separate from the prototype Draft folder. The
+  `init`/`slides init` interactive folder picker asks "Where should this slide deck live?" and
+  lists only slides folders.
+- **A deck can exist with no local checkout** — the dashboard supports dropping an `.html` file
+  or a `.zip` (with `index.html` at its root) straight onto a slides folder to publish a new
+  deck or a new version of one, no CLI involved. To fetch that deck's code, run
+  `artor pull --project <slug>` (or `remix`/`rename`/`rm`) exactly as you would for any
+  prototype — project listing/lookup commands work across both kinds by default (only an
+  explicit, invalid `--kind`-style filter would exclude one).
+- **No env vars, no mocks.** Both only ever apply to node-server containers; a static deck has
+  neither, so there is no "disable" flag to reach for — it's structural, not a limitation to
+  work around.
 
 ## Publishing notes
 

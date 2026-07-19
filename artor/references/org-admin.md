@@ -142,6 +142,10 @@ artor folder clear <ref> [--yes]
   **trashes** them instead — **admin-only**.
 - **`clear`** soft-deletes every prototype in the folder — **admin-only**.
 - The **Draft** folder is immutable: it can't be renamed or deleted.
+- **Folders are per-kind.** A slide deck's folders are entirely separate from a prototype's —
+  each kind gets its own "Draft" and its own namespace of folder names. `artor folder` run
+  inside a linked slides project automatically targets slides folders; run inside a prototype
+  it targets prototype folders. There's no cross-kind folder move.
 
 ## Operator (platform super-admins)
 
