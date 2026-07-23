@@ -81,7 +81,7 @@ framework dependency (e.g. `next`), **not** the workspace root. The `.artor` lin
 | ------------------------------------------- | ---------------------------------------------------------- |
 | Publish the next version (builds on demand) | `artor publish` (alias `artor push`)                       |
 | Publish with a changelog                    | `artor publish --message "<summary>"` (`-m`)               |
-| Publish with a label                        | `artor publish --label "dark-mode"`                        |
+| Publish with a label (one line, max 128 chars) | `artor publish --label "dark-mode"`                   |
 | Publish and move a named alias              | `artor publish -v staging`                                 |
 | Reuse an existing build / skip install      | `artor publish --no-build` / `--no-install`                |
 | Skip the web-sdk update check (see notes)   | `artor publish --no-sdk-update`                            |

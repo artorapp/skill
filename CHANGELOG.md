@@ -7,6 +7,19 @@ uses pre-1.0 (0.x) semver — new user-visible capability bumps MINOR, fixes/doc
 After a version bump, users pull it with `claude plugin marketplace update artor && claude plugin
 update artor@artor` (update only fires on a version bump).
 
+## [0.15.1] - 2026-07-22
+
+Documents the new **version label cap** shipping with the next artor-cli release.
+
+### Changed
+
+- `artor publish --label` is documented as a one-line value with a **128-character maximum** -
+  the CLI now fails loud before uploading when the label is longer, the server rejects it with
+  a clean 400 (`label_too_long`), and the database column is sized to match. Newlines and tabs
+  in a label are flattened to single spaces.
+- Command-map row for "Publish with a label" now carries the cap inline so agents generating
+  labels stay under it.
+
 ## [0.15.0] - 2026-07-19
 
 Documents **slide decks**, a second Artor project kind, mirroring artor-cli **0.18.0**'s slides
