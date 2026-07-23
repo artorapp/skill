@@ -7,6 +7,21 @@ uses pre-1.0 (0.x) semver — new user-visible capability bumps MINOR, fixes/doc
 After a version bump, users pull it with `claude plugin marketplace update artor && claude plugin
 update artor@artor` (update only fires on a version bump).
 
+## [0.15.2] - 2026-07-23
+
+Documents the mock hygiene fixes shipping with **artor-cli 0.18.1**.
+
+### Changed
+
+- `artor publish` now prints a warning naming any bundled `mocks/*.json` files skipped from the
+  version snapshot (oversize or invalid JSON). Documented as a heads-up, not a failure: the mock
+  still serves via the bundled fallback, so the fix is to shrink or repair the file and republish
+  to have it pinned.
+- Every `artor mock` verb is documented as validating the `<name>` locally before the network,
+  and `artor mock pin` as validating the `<sha>` shape (full 64-char lowercase hex) locally. A
+  "no such revision" error therefore signals a genuinely unknown sha, not a malformed one - copy
+  the exact sha from `artor mock revisions <name>`.
+
 ## [0.15.1] - 2026-07-22
 
 Documents the new **version label cap** shipping with the next artor-cli release.

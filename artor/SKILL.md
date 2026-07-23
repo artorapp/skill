@@ -249,6 +249,10 @@ works identically; a deck is just a project whose `kind` is `"slides"` instead o
   prompt; on a TTY with no flag you're prompted per conflict; **off a TTY with no flag and a real
   conflict, publish fails loud asking for `--mocks=`** — there's no safe silent default, since
   either side could clobber a real edit. No local `mocks/` dir at all skips the check entirely.
+- **Skipped-bundled-mock report.** If a `mocks/*.json` file is dropped from the version snapshot
+  at publish time (too large, or not valid JSON), `artor publish` now prints a warning line naming
+  the skipped mocks and why. The version still serves that mock via the bundled fallback, so it is
+  a heads-up, not a failure: shrink the file or fix its JSON, then republish, to have it pinned.
 
 ## Env vars and mocks: org, project, or version scope
 
@@ -271,6 +275,11 @@ that resolution happens:
   affects the *next* publish, never a version already shipped. `artor mock pin <name> <sha>
   --version <ref>` is the deliberate escape hatch to repoint an already-published version's mock
   without a republish (look up the sha with `artor mock revisions <name>`).
+- **Local shape checks before the network.** Every `artor mock` verb validates the `<name>` locally
+  first, and `artor mock pin` also validates the `<sha>` shape (a full 64-char lowercase hex),
+  failing fast with a clear message instead of round-tripping to the server. A "no such revision"
+  error therefore means the sha is genuinely not a revision of that mock, not a typo in its shape;
+  copy the exact sha from `artor mock revisions <name>`.
 
 ## Small tweaks: overwrite vs. new version
 
