@@ -7,6 +7,35 @@ uses pre-1.0 (0.x) semver — new user-visible capability bumps MINOR, fixes/doc
 After a version bump, users pull it with `claude plugin marketplace update artor && claude plugin
 update artor@artor` (update only fires on a version bump).
 
+## [0.16.0] - 2026-07-24
+
+Documents **Spaces**, the access wall above folders, and the new org-readable Space mode.
+
+### Added
+
+- **`artor space`** - the whole verb set (`list`, `create`, `rename`, `read`, `rm`, `members
+  add|rm`) documented in `references/org-admin.md`, with a new top-level row in SKILL.md's
+  project-lifecycle table. A Space is the ONLY permission boundary between org members:
+  **Org -> Space -> Folder -> Prototype -> Version**. Three kinds - Organization (every member),
+  Personal (owner-only, never admins or operators), and shared (explicit member list, Team plan
+  or higher).
+- **`artor space read <space> on|off`** - open a shared Space so every org member can see it,
+  open its prototypes, and leave comments, while still being unable to publish, rename, move,
+  trash, share, edit folders, or touch env vars and mocks. Documents that a write attempt is a
+  403 `space_read_only` (deliberately not a 404 - the caller can already see the content), that
+  `pull`/`remix`/`env pull` at read level require a **publisher seat** (a reviewer gets 403
+  `publisher_required`), that flipping it needs a Space admin OR an org admin and is always
+  audited, and that turning it off revokes reach immediately while comments already left stay.
+- `artor init --space <s>` and `--space <name|id>` on `folder list|create|move`.
+
+### Changed
+
+- Folders are now described as cosmetic **within a Space** rather than org-wide, with one
+  protected **Draft per Space**, and folder ops noted as 404 in an unreachable Space / 403 in a
+  read-only one.
+- The `env`/`mock` project-scope note in SKILL.md is relabelled "previous release" - the
+  Spaces note takes the current-release slot.
+
 ## [0.15.2] - 2026-07-23
 
 Documents the mock hygiene fixes shipping with **artor-cli 0.18.1**.
