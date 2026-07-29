@@ -123,17 +123,53 @@ artor registry login                 # write the managed .npmrc block for this o
   never leaves the server. `init`, `pull`, and `remix` re-derive this block best-effort automatically.
 - `--expires YYYY-MM-DD` bounds the upstream token's validity.
 
-## Folders — `artor folder`
+## Spaces — `artor space`
 
-Organize prototypes into folders within the linked dir's org. Interactive pickers appear on a TTY for
-`create`/`color`/`move`.
+A **Space** is the access wall: **Org → Space → Folder → Prototype → Version**. It is the ONLY
+permission boundary between org members — folders are cosmetic grouping *within* a Space. Three
+kinds: **Organization** (every member, always exists), **Personal** (one per member, owner-only —
+never admins, never operators), **shared** (an explicit member list; needs the Team plan or higher).
 
 ```bash
-artor folder list                    # (alias ls)
-artor folder create [<name>] [--color <c>]
+artor space list                             # the Spaces you can see
+artor space create <name>                    # shared Space (Team+ plan); you become its admin
+artor space rename <space> "<new>"           # Space admin only
+artor space read <space> on|off              # let the WHOLE org read + comment
+artor space rm <space> [--yes]               # delete an EMPTY shared Space
+artor space rm <space> --move-to <folder> [--yes]   # move its prototypes out first, then delete
+artor space members <space>
+artor space members <space> add <email-or-id> [--role admin|member]
+artor space members <space> rm <email-or-id>
+```
+
+- `<space>` resolves by exact id or case-insensitive name; members by **email or user id** (run
+  `artor org members` for the roster). Organization/Personal Spaces appear in `list` but reject
+  rename/delete/member ops.
+- **`read on` is a deliberate widening.** Every org member can then see the Space, open its
+  prototypes, and **comment** — and nothing else. Publish, rename, move, trash, share, folder ops,
+  env vars and mocks all fail with **403 `space_read_only`** (not a 404 — the caller can already
+  see the content). Turning it **off** revokes reach immediately; comments already left stay.
+- **Source is seat-gated at read level.** `artor pull` / `remix` / `env pull` work for a
+  read-only viewer only with a **publisher seat**; a reviewer gets 403 `publisher_required`.
+- Flipping `read` needs a **Space admin OR an org admin**; it is always audited.
+- An **org admin** may VIEW any shared Space (oversight) but not write into it or govern its
+  membership without the audited break-glass step. A **Personal** Space is never visible to
+  anyone else, admins and operators included.
+- `artor init` asks which Space first, then the folder. Non-TTY lands in the Organization Space's
+  Draft.
+
+## Folders — `artor folder`
+
+Organize prototypes into folders **within a Space** in the linked dir's org. Interactive pickers
+appear on a TTY for `create`/`color`/`move`. A folder in a Space you can't reach is a clean 404;
+in a Space you can only read, every folder op is refused with 403 `space_read_only`.
+
+```bash
+artor folder list [--space <name|id>]        # (alias ls)
+artor folder create [<name>] [--color <c>] [--space <name|id>]
 artor folder rename <ref> "<new>"
 artor folder color <ref> [<css|none>]
-artor folder move [<project>] [<folder>]
+artor folder move [<project>] [<folder>] [--space <name|id>]
 artor folder rm <ref> [--with-content|--with-prototypes|--with-projects] [--yes]
 artor folder clear <ref> [--yes]
 ```
@@ -141,7 +177,8 @@ artor folder clear <ref> [--yes]
 - **`rm`** by default moves the folder's prototypes to **Draft**. `--with-content` (and its aliases)
   **trashes** them instead — **admin-only**.
 - **`clear`** soft-deletes every prototype in the folder — **admin-only**.
-- The **Draft** folder is immutable: it can't be renamed or deleted.
+- The **Draft** folder is immutable: it can't be renamed or deleted. There is exactly one **per
+  Space**, and a prototype with no folder resolves to its Space's Draft.
 - **Folders are per-kind.** A slide deck's folders are entirely separate from a prototype's —
   each kind gets its own "Draft" and its own namespace of folder names. `artor folder` run
   inside a linked slides project automatically targets slides folders; run inside a prototype

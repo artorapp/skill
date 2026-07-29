@@ -61,7 +61,7 @@ framework dependency (e.g. `next`), **not** the workspace root. The `.artor` lin
 
 | Goal                                     | Command                                                                            |
 | ---------------------------------------- | ---------------------------------------------------------------------------------- |
-| Create + link a project here             | `artor init [--name "My App"] [--folder <f>] [--org <slug>] [--no-git]`            |
+| Create + link a project here             | `artor init [--name "My App"] [--space <s>] [--folder <f>] [--org <slug>] [--no-git]` |
 | Create + link a **slide deck**           | `artor init --slides [...]` (canonical) or `artor slides init [...]` (alias)        |
 | Scaffold from an org template            | `artor init --template <slug> [--here] [--no-install]`                             |
 | Attach this dir to an EXISTING project   | `artor link [<id\|slug>] [--org <slug>] [--force]`                                 |
@@ -74,6 +74,14 @@ framework dependency (e.g. `next`), **not** the workspace root. The `.artor` lin
 | Restore a trashed project                | `artor restore <slug>`                                                             |
 | List trashed projects + time left        | `artor trash`                                                                      |
 | Organize prototypes into folders         | `artor folder list\|create\|rename\|color\|move\|rm\|clear`                        |
+| Control WHO can reach a set of prototypes | `artor space list\|create\|rename\|read\|rm\|members`                              |
+
+> **Project ids carry a random suffix.** `artor init` creates `my-prototype-a7f`, not
+> `my-prototype`, and prints the local folder name and the project id on separate lines - they are
+> SUPPOSED to differ, so do not report that as an error or retry. Always use the id the CLI
+> printed (or `.artor/project.json`); never reconstruct one from the display name. The suffix is
+> added to every project, not only on a name clash, so that creating a prototype cannot reveal
+> whether a name is already taken in a Space the user cannot see.
 
 **Publish, open, review**
 
@@ -115,7 +123,14 @@ publisher seat at project/version scope — details: `references/org-admin.md`)
 | Org starter templates                        | `artor template push --name X [--slug y] [--desc z]` / `list`                                |
 | Private registry providers                   | `artor registry add <@scope> --type azure\|npmjs [--name <l>] [--expires <d>]` / … / `login` |
 
-**Behavior change (this release): `env`/`mock`'s default scope inside a linked folder is now the
+**New this release: Spaces — the access wall.** `artor space` manages who in the org can reach a
+set of prototypes (**Org → Space → Folder → Prototype**); folders are cosmetic *within* a Space.
+`artor space read <space> on` opens a shared Space so every org member can **view and comment**
+but change nothing — writes fail with 403 `space_read_only`, and `pull`/`remix`/`env pull` need a
+**publisher seat** at that level. A Personal Space is owner-only, never visible to admins or
+operators. Full verbs + rules: `references/org-admin.md`.
+
+**Behavior change (previous release): `env`/`mock`'s default scope inside a linked folder is now the
 LINKED PROJECT, not the org.** Running `artor env set` / `artor mock set` (etc.) from a linked
 directory with no scope flag now targets that one prototype, not every prototype in the org. Pass
 `--org` to reach the old org-wide target, or `--version <ref>` to narrow to one immutable version.
@@ -510,5 +525,5 @@ Report the exact version number and URL the CLI returns; do not invent them.
 ## Reference files (read on demand)
 
 - **Review widget wiring** (SDK install per framework, manual wiring, updating): `references/review-widget.md`.
-- **Org admin deep-dive** (env / mock / skills / templates / registry / folder verbs / operator): `references/org-admin.md`.
+- **Org admin deep-dive** (env / mock / skills / templates / registry / **space** + folder verbs / operator): `references/org-admin.md`.
 - **Troubleshooting** (symptom → cause → fix, with exact CLI error strings): `references/troubleshooting.md`.
