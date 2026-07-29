@@ -76,6 +76,13 @@ framework dependency (e.g. `next`), **not** the workspace root. The `.artor` lin
 | Organize prototypes into folders         | `artor folder list\|create\|rename\|color\|move\|rm\|clear`                        |
 | Control WHO can reach a set of prototypes | `artor space list\|create\|rename\|read\|rm\|members`                              |
 
+> **Project ids carry a random suffix.** `artor init` creates `my-prototype-a7f`, not
+> `my-prototype`, and prints the local folder name and the project id on separate lines - they are
+> SUPPOSED to differ, so do not report that as an error or retry. Always use the id the CLI
+> printed (or `.artor/project.json`); never reconstruct one from the display name. The suffix is
+> added to every project, not only on a name clash, so that creating a prototype cannot reveal
+> whether a name is already taken in a Space the user cannot see.
+
 **Publish, open, review**
 
 | Goal                                        | Command                                                    |
