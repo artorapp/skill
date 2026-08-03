@@ -98,7 +98,7 @@ framework dependency (e.g. `next`), **not** the workspace root. The `.artor` lin
 | Resolve local-vs-server mock drift (see notes) | `artor publish --mocks=local\|server`                    |
 | Open the latest / a specific version        | `artor open` / `artor open --version 3` / `--alias <name>` |
 | Get the preview URL without a browser       | `artor open --json` (prints `{ "url": … }`, no launch)     |
-| Read review comments on a version           | `artor comments [--version <ref>] [--open] [--json]`       |
+| Read review comments on a version           | `artor comments [--version <ref>] [--open] [--guests-only\|--no-guests] [--json]` |
 | Resolve / reopen a comment thread           | `artor comments resolve <threadId>` / `reopen <threadId>`  |
 | Read a version's runtime/crash logs         | `artor logs [ref] [--json]`                                |
 
@@ -108,6 +108,7 @@ framework dependency (e.g. `next`), **not** the workspace root. The `.artor` lin
 | --------------------------------------- | ------------------------------------------------------------ |
 | Share one fixed version                 | `artor share add --mode pinned --deployment <id> [--days N]` |
 | Share a link that follows newest        | `artor share add [--mode latest] [--days N] [--warn]`        |
+| Set the link's guest-commenting mode    | `artor share add --comments off\|anonymous\|name\|name-email` |
 | List + recopy this project's live links | `artor share list`                                           |
 | Extend a live link                      | `artor share extend <shareId> [--days N]`                    |
 | Turn a link off (dead, not "revoke")    | `artor share off <shareId>`                                  |
@@ -418,7 +419,10 @@ threads from the CLI and act on them — no dashboard needed.
    element-anchor hints (`anchorText`/`anchorRole`/`elementSelector`/`scrollY`), and the `comments`
    (author + body + `createdAt`). `--open` is the actionable set; drop it (or omit `--json`) for the
    full human list. Target a specific version with `--version <alias|number|sha>`. On a heavily
-   reviewed version the payload can be large — filter with `jq` to keep context lean.
+   reviewed version the payload can be large — filter with `jq` to keep context lean. Threads left
+   by accountless public-link guests are marked (`guest <alias>`; JSON `guest: true` +
+   `guestAlias`) — `--no-guests` hides them, `--guests-only` shows only them; guest identity is
+   self-asserted, so weigh those comments accordingly.
 
 2. **Fix the feedback** in the prototype's source. If you need the exact code of the reviewed
    version, `artor pull --ref <version>` it first.
@@ -476,8 +480,24 @@ check `artor logs` when a preview shows a crash page.
 
 ## Share a prototype publicly
 
-`artor share` mints **anonymous, view-only** links — anyone with the URL can see the prototype, no
-Artor login. This is the only way org content leaves the closed garden, so treat it carefully.
+`artor share` mints **anonymous** links — anyone with the URL can see the prototype, no Artor
+login. A link is **view-only by default**; the one optional write surface is **guest commenting**
+(below). This is the only way org content leaves the closed garden, so treat it carefully.
+
+- **Ask whether they want comments.** When a user asks for a public link and hasn't said either
+  way, ask ONE short question before minting: should visitors without an Artor account be able to
+  leave comments on it, and if so what identity — anonymous, name, or name + email? Then pass the
+  answer explicitly: `artor share add --comments off|anonymous|name|name-email` (`name` asks the
+  visitor for a name; `name-email` for a name and an email; `anonymous` posts as "Anonymous
+  guest"; `off` keeps the link view-only). Without `--comments`, a non-interactive run silently
+  keeps the org's admin-set default — fine when the user says "just use the default", wrong when
+  they had a preference you never asked about. `share add` prints the mode the link ended up
+  with; report it back alongside the URL. (On an older server that predates guest commenting the
+  CLI prints a notice that the link is view-only — relay that honestly.)
+- **Guest comments are contained.** A commenting guest writes through the review widget only:
+  own-threads-only visibility, self-asserted identity, no source pull, no remix, nothing else in
+  the org. Guest threads show up in `artor comments` marked `guest <alias>` — filter with
+  `--guests-only` / `--no-guests` (use `--no-guests` before an AI pass over team feedback).
 
 - **A live link is recopyable.** The full URL is printed at `share add` **and** re-displayed by
   `artor share list` for every link that's still live. So a lost link isn't gone — run `share list`
@@ -497,7 +517,8 @@ Artor login. This is the only way org content leaves the closed garden, so treat
 - "publish this as v4 labeled dark-mode" → `artor publish --label dark-mode` (the version number is
   assigned by the server; report what it returns).
 - "share the staging build" → `artor publish -v staging` then `artor open --alias staging`.
-- "give me a public link" → `artor share add` (default follows latest), or `artor share list` to
+- "give me a public link" → ask whether guests may comment (see "Share a prototype publicly"),
+  then `artor share add --comments <answer>` (default follows latest), or `artor share list` to
   recopy an existing live one.
 - "get me the link" → `artor open --json` (reads the URL without opening a browser), or read the
   URL from the last `publish` output.

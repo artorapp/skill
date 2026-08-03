@@ -7,6 +7,40 @@ uses pre-1.0 (0.x) semver — new user-visible capability bumps MINOR, fixes/doc
 After a version bump, users pull it with `claude plugin marketplace update artor && claude plugin
 update artor@artor` (update only fires on a version bump).
 
+## [0.17.0] - 2026-08-03
+
+Documents **guest commenting on public links** and teaches the agent to ask about it.
+
+### Added
+
+- **Ask before minting a public link**: when a user asks for a public share and hasn't said
+  either way, the agent now asks one short question first - should accountless visitors be able
+  to comment, and with what identity (anonymous / name / name + email) - and passes the answer
+  explicitly via the new `artor share add --comments off|anonymous|name|name-email` flag.
+  Without the flag, a non-interactive run keeps the org's admin-set default; the flag is how an
+  agent honors an actual preference.
+- **Guest-commenting model documented** in "Share a prototype publicly": a public link is
+  view-only by default; guest commenting is its one opt-in write surface. A commenting guest
+  writes through the review widget only - own-threads-only visibility, self-asserted identity,
+  no source pull, no remix, nothing else in the org.
+- **Guest threads in `artor comments`**: threads left by public-link guests are marked
+  (`guest <alias>`; JSON `guest: true` + `guestAlias`), with the new `--guests-only` /
+  `--no-guests` filters documented - including the recommendation to use `--no-guests` before
+  an AI pass over team feedback, and a reminder that guest identity is self-asserted.
+- **Reporting guidance**: `share add` now prints the link's resulting guest-commenting mode;
+  the agent reports it back alongside the URL, and honestly relays the CLI's notice when an
+  older server predates guest commenting (the link stays view-only there).
+
+### Changed
+
+- Command tables updated: the share table gains the `--comments` row; the comments row gains
+  `[--guests-only|--no-guests]`.
+- "Interpreting requests": "give me a public link" now routes through the ask-about-comments
+  step before `artor share add`.
+
+Requires `artor-cli` >= 0.21.0 for `--comments` and the guest filters (older CLIs ignore
+unknown flags silently - update first).
+
 ## [0.16.0] - 2026-07-24
 
 Documents **Spaces**, the access wall above folders, and the new org-readable Space mode.
