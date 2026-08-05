@@ -191,7 +191,7 @@ Only for platform super-admins listed in `ARTOR_SUPERADMINS`.
 | Goal                      | Command                                                                    |
 | ------------------------- | -------------------------------------------------------------------------- |
 | List all orgs             | `artor admin org list` (alias `ls`)                                        |
-| Get / set an org's plan   | `artor admin plan get <orgId>` / `admin plan set <orgId> <free\|pro\|enterprise>` |
+| Get / set an org's plan   | `artor admin plan get <orgId>` / `admin plan set <orgId> <free\|pro\|team\|enterprise>` |
 | Platform share ceiling    | `artor admin share-ceiling get` / `set <days>` (server clamps to [1, 90])  |
 | Delete / restore an org   | `artor admin org delete <id> --confirm [--reason]` / `admin org restore <id>` |
 | Delete / restore a user   | `artor admin user delete <id> --confirm [--reason]` / `admin user restore <id>` |

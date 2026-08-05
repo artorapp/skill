@@ -10,8 +10,8 @@ Run the `artor` CLI from the project root. Every published version gets a perman
 preview URL; review comments and shared org knowledge (skills, env vars, mock datasets, registries)
 attach to the project. `artor --help` prints the full command surface — this skill covers the
 workflows you'll drive most. **Prefer `--json` on read commands** (artor-cli ≥ 0.14): `status`,
-`whoami`, `project list|search`, `share list`, `comments`, `trash`, `folder list`, `env list`,
-`mock list`, `skill list`, and `open` (prints `{ "url": … }` **without** launching a browser —
+`whoami`, `project list|search`, `share list`, `comments`, `trash`, `folder list`, `space list`,
+`env list`, `mock list`, `skill list`, `logs`, and `open` (prints `{ "url": … }` **without** launching a browser —
 ideal for grabbing the preview URL headlessly). It prints the payload to stdout and suppresses the
 human rendering. If `--json` is rejected, the CLI is older — `artor update`. For write commands
 (no `--json`), report the exact CLI output rather than paraphrasing.
@@ -100,6 +100,7 @@ framework dependency (e.g. `next`), **not** the workspace root. The `.artor` lin
 | Get the preview URL without a browser       | `artor open --json` (prints `{ "url": … }`, no launch)     |
 | Read review comments on a version           | `artor comments [--version <ref>] [--open] [--guests-only\|--no-guests] [--json]` |
 | Resolve / reopen a comment thread           | `artor comments resolve <threadId>` / `reopen <threadId>`  |
+| Exclude / re-include a thread from AI passes | `artor comments ignore <threadId>` / `unignore <threadId>` |
 | Read a version's runtime/crash logs         | `artor logs [ref] [--json]`                                |
 
 **Share (anonymous public links)**
@@ -144,7 +145,7 @@ org-only pull.
 
 | Goal                               | Command                                                                                              |
 | ---------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| Manage org plans / entitlements    | `artor admin org list` / `admin plan get <orgId>` / `admin plan set <orgId> <free\|pro\|enterprise>` |
+| Manage org plans / entitlements    | `artor admin org list` / `admin plan get <orgId>` / `admin plan set <orgId> <free\|pro\|team\|enterprise>` |
 | Platform share-link ceiling (days) | `artor admin share-ceiling get` / `set <days>`                                                       |
 
 **CLI itself**
@@ -249,7 +250,7 @@ works identically; a deck is just a project whose `kind` is `"slides"` instead o
 - `artor open` always prints the URL first (`Opening <url>`) and, if it can't launch a browser,
   falls back to `(open it manually: <url>)` — so it is safe in headless/CI environments. Prefer
   `artor open --json` to get `{ "url": … }` with no browser launch at all. With no live version,
-  plain `open` prints "No live versions to open. Run `artor publish` first." (info, exit 0).
+  plain `open` prints "No live versions to open yet. Run `artor publish` first." (info, exit 0).
 - Secrets are never uploaded: `.env*`, `.envrc`, `.npmrc`, `.yarnrc*`, `.netrc`, `credentials*`,
   `kubeconfig`, `*.pem`, `*.key`, `id_rsa*`, and similar secret files are force-excluded regardless
   of `.gitignore` (as are `node_modules`, `.git`, `.next`, `.artor`, …).
@@ -415,14 +416,18 @@ threads from the CLI and act on them — no dashboard needed.
    ```
 
    The JSON payload carries `ref`, `version`, `deploymentId`, and a `threads` array. Each thread
-   carries its `resolved` state, the page `route`, the pin offset (`offsetXPct`/`offsetYPct`),
-   element-anchor hints (`anchorText`/`anchorRole`/`elementSelector`/`scrollY`), and the `comments`
+   carries its `resolved` and `aiIgnored` states, the page `route`, the pin offset
+   (`offsetXPct`/`offsetYPct`), element-anchor hints
+   (`anchorText`/`anchorRole`/`elementSelector`/`scrollY`), and the `comments`
    (author + body + `createdAt`). `--open` is the actionable set; drop it (or omit `--json`) for the
    full human list. Target a specific version with `--version <alias|number|sha>`. On a heavily
    reviewed version the payload can be large — filter with `jq` to keep context lean. Threads left
    by accountless public-link guests are marked (`guest <alias>`; JSON `guest: true` +
    `guestAlias`) — `--no-guests` hides them, `--guests-only` shows only them; guest identity is
-   self-asserted, so weigh those comments accordingly.
+   self-asserted, so weigh those comments accordingly. A thread with `aiIgnored: true` (the human
+   list marks it `AI: off`) was deliberately excluded from AI processing: **skip it entirely** in
+   an AI pass, and don't resolve it. Any member can flip the flag with `artor comments
+   ignore|unignore <threadId>`.
 
 2. **Fix the feedback** in the prototype's source. If you need the exact code of the reviewed
    version, `artor pull --ref <version>` it first.

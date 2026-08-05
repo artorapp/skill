@@ -7,6 +7,50 @@ uses pre-1.0 (0.x) semver — new user-visible capability bumps MINOR, fixes/doc
 After a version bump, users pull it with `claude plugin marketplace update artor && claude plugin
 update artor@artor` (update only fires on a version bump).
 
+## [0.17.1] - 2026-08-05
+
+Doc-drift audit against the current CLI source; no behavior change, corrections and
+completions only.
+
+### Fixed
+
+- **`artor admin plan set` enum**: the operator plan enum is `free|pro|team|enterprise`; the
+  skill (SKILL.md operator table and `references/org-admin.md`) omitted `team`. Both now match
+  the CLI usage string exactly.
+- **`artor open` empty-state string**: the CLI prints "No live versions to open yet. Run
+  `artor publish` first." - the quoted string in SKILL.md and in
+  `references/troubleshooting.md` was missing "yet", so exact-string matching would fail.
+- **Boot smoke test error string** in `references/troubleshooting.md`: the CLI prints
+  "boot smoke test failed: the bundle crashes on `node <entry>` before binding its port",
+  with a colon; the table quoted a different separator.
+- **Plain-HTML entry error string** in `references/troubleshooting.md`: the CLI prints
+  "found .html files but no index.html at the project root. Rename your entry page to
+  index.html (or pass --dir <path>)."; the table quoted an older one-sentence variant.
+
+### Added
+
+- **`artor comments ignore|unignore <threadId>`** documented for the first time: a new row in
+  the publish/review command table, the `aiIgnored` field added to the documented JSON payload
+  (human list marker `AI: off`), and an explicit rule in the address-feedback flow (SKILL.md and
+  `commands/address-comments.md`): a thread with `aiIgnored: true` was deliberately excluded
+  from AI processing, so an AI pass skips it entirely and never resolves it.
+- **Guest commenting reached the `/artor:share` command doc** (`commands/share.md`), which
+  still described links as strictly view-only: it now carries the `--comments
+  off|anonymous|name|name-email` flag on both `share add` forms, the ask-one-question guidance,
+  the non-interactive-keeps-org-default caveat, the printed resulting mode to report back, the
+  older-server view-only notice, and the guest-containment summary.
+- **Guest markers reached the `/artor:address-comments` command doc**
+  (`commands/address-comments.md`): guest threads (`guest: true` + `guestAlias`, human marker
+  `guest <alias>`, self-asserted identity) and the `--guests-only` / `--no-guests` filters,
+  including the recommendation to use `--no-guests` for a pass over team feedback.
+- **`--json` command list completed** in SKILL.md's intro: `space list` and `logs` also accept
+  `--json` and are now listed alongside the other read commands.
+
+### Notes
+
+- The slide-deck section documents the `slides` capability shipping on its own CLI branch and
+  was deliberately left untouched by this audit.
+
 ## [0.17.0] - 2026-08-03
 
 Documents **guest commenting on public links** and teaches the agent to ask about it.
