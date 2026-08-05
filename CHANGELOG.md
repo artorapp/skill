@@ -7,6 +7,42 @@ uses pre-1.0 (0.x) semver — new user-visible capability bumps MINOR, fixes/doc
 After a version bump, users pull it with `claude plugin marketplace update artor && claude plugin
 update artor@artor` (update only fires on a version bump).
 
+## [0.17.2] - 2026-08-05
+
+Freshness pass against the final `artor share` CLI source. The `share list` human output now
+carries a guest-commenting suffix that no skill page described, so an agent reading that output
+had no way to know the trailing field existed or what its words mean. Docs only, no behavior
+change.
+
+### Added
+
+- **`share list` line format is now documented**, in both `artor/SKILL.md` (share section) and
+  `artor/commands/share.md` (Manage links). The human output is tab-separated
+  `<shareId> <mode> <state> <views> <url or hint>`, with the previously undocumented trailing
+  `guests: <mode>` on live links.
+- **The guest-suffix vocabulary is spelled out**: `off`, `anonymous`, `name`, `name and email` -
+  note that the human word for the `name_email` enum is the spaced phrase "name and email", so an
+  agent matching on the raw enum against human output would miss it.
+- **Three absence cases called out**, so a missing suffix is never read as "guest commenting is
+  off": (1) a **turned-off** link, (2) an **expired** link, and (3) an **older server** that does
+  not send the field at all. A live link whose mode really is off prints `guests: off`
+  explicitly, which is the only reliable "off" signal.
+- **`--json` steered as the parsing path** for this line, with the shape difference flagged: the
+  JSON payload carries `guestCommenting` as the raw wire enum (`name_email`), not the human
+  phrase. `share list` was already listed among the `--json` read commands in the SKILL.md
+  preamble, but the Share command table row omitted the flag; it now reads
+  `artor share list [--json]`.
+
+### Verified unchanged
+
+- **`--comments` flag surface** re-checked against the CLI's `parseShareAdd`: the accepted values
+  remain `off|anonymous|name|name-email` (the hyphenated `name-email` spelling is normalized to
+  the `name_email` wire enum), the flag stays optional, and an absent flag still means "ask with
+  a picker on a TTY, keep the org admin-set default unattended". Existing skill copy already
+  matched, so it was left alone.
+- **Dead/legacy link hints** re-checked: a turned-off link still shows `(off — reshare to copy)`
+  and an expired or legacy row still shows `(reshare to copy)`. No edit needed.
+
 ## [0.17.1] - 2026-08-05
 
 Doc-drift audit against the current CLI source; no behavior change, corrections and

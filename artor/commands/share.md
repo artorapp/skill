@@ -49,11 +49,20 @@ artor share add --mode pinned --deployment <id> [--days N] [--comments off|anony
 ## Manage links
 
 ```bash
-artor share list                      # this project's links (run in the linked dir)
+artor share list [--json]             # this project's links (run in the linked dir)
 artor share extend <shareId> [--days N]
 artor share off <shareId>
 ```
 
+- **`share list` line format** (human output, tab-separated):
+  `<shareId>` `<mode>` `<state>` `<views>` `<url or hint>` and, on a **live** link only,
+  a trailing `guests: <mode>`. `<state>` is `off` for a turned-off link, else
+  `expires in N days` or `expired`; `<views>` is `N view` / `N views`. The guest word is one of
+  `off`, `anonymous`, `name`, `name and email` - so a live view-only link still prints
+  `guests: off`. The suffix is **absent** on a dead (turned-off or expired) link, whose mode is
+  inert, and on an older server that doesn't send the field at all. Prefer `--json` when you need
+  to parse this; the JSON carries `guestCommenting` as the raw enum (`name_email`, not
+  `name and email`).
 - `extend` only re-clamps a **live** link.
 - `off` kills a link **permanently** — say **"turned off"**, never "revoked". A turned-off or
   expired link is **dead**; to share again, create a new link (fresh token). `extend` cannot

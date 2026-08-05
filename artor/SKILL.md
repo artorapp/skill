@@ -110,7 +110,7 @@ framework dependency (e.g. `next`), **not** the workspace root. The `.artor` lin
 | Share one fixed version                 | `artor share add --mode pinned --deployment <id> [--days N]` |
 | Share a link that follows newest        | `artor share add [--mode latest] [--days N] [--warn]`        |
 | Set the link's guest-commenting mode    | `artor share add --comments off\|anonymous\|name\|name-email` |
-| List + recopy this project's live links | `artor share list`                                           |
+| List + recopy this project's live links | `artor share list [--json]`                                  |
 | Extend a live link                      | `artor share extend <shareId> [--days N]`                    |
 | Turn a link off (dead, not "revoke")    | `artor share off <shareId>`                                  |
 
@@ -508,6 +508,11 @@ login. A link is **view-only by default**; the one optional write surface is **g
   `artor share list` for every link that's still live. So a lost link isn't gone — run `share list`
   to copy it again. A **disabled** (turned-off) link shows `(off — reshare to copy)`; an **expired**
   or **legacy** row shows `(reshare to copy)` — those have no recoverable URL, so re-add for a fresh one.
+- **`share list` also reports each live link's guest-commenting mode.** Each human line is
+  tab-separated `<shareId> <mode> <state> <views> <url or hint>`, and a **live** link appends
+  `guests: off|anonymous|name|name and email`. A live view-only link still prints `guests: off`;
+  the suffix is absent on a dead (turned-off/expired) link and on an older server that doesn't
+  send the field. Use `share list --json` to parse it (`guestCommenting`, raw enum `name_email`).
 - **`--mode pinned`** ties the link to **one fixed version** (pass `--deployment <id>`) — its bytes
   never change. **`--mode latest`** (the default) follows the newest publish.
 - **Duration** is `--days N` (default 7); the server clamps it to the org cap and platform ceiling
