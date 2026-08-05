@@ -7,6 +7,23 @@ uses pre-1.0 (0.x) semver — new user-visible capability bumps MINOR, fixes/doc
 After a version bump, users pull it with `claude plugin marketplace update artor && claude plugin
 update artor@artor` (update only fires on a version bump).
 
+## [0.17.3] - 2026-08-05
+
+Lockstep with the artor-cli 0.22.1 copy sweep: the CLI's shipped strings no longer use
+em-dashes, which changes one exact-quoted output the skill tells agents to string-match.
+Docs only, no behavior change.
+
+### Changed
+
+- **`share list` dead-link hint quote updated** in `artor/SKILL.md` and
+  `artor/commands/share.md`: CLI 0.22.1+ prints `(off - reshare to copy)` (plain hyphen).
+  Both pages now show the new form and note that CLI 0.22.0 and older print the em-dash
+  variant `(off — reshare to copy)`, so an agent matching either form stays correct across
+  server/CLI version skew.
+- No other quoted CLI string changed meaning or wording in ways the skill matches on; the
+  managed-block markers (`registry`/`skills`/`sdk`/`env` "managed — do not edit" fences) are
+  deliberately unchanged in the CLI for compatibility and remain accurate as quoted.
+
 ## [0.17.2] - 2026-08-05
 
 Freshness pass against the final `artor share` CLI source. The `share list` human output now

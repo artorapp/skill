@@ -40,7 +40,8 @@ artor share add --mode pinned --deployment <id> [--days N] [--comments off|anony
   show up in `artor comments` marked `guest <alias>`; filter with `--guests-only` / `--no-guests`.
 - **A live link is recopyable.** The full URL prints at `share add` **and** is re-displayed by
   `artor share list` while the link is live — so a lost link isn't gone, just run `share list`. A
-  **disabled** (turned-off) link shows `(off — reshare to copy)`; an **expired** or **legacy**
+  **disabled** (turned-off) link shows `(off - reshare to copy)` (CLI 0.22.0 and older print an
+  em-dash variant, `(off — reshare to copy)` - match either); an **expired** or **legacy**
   (pre-encryption) row shows `(reshare to copy)` — those have no recoverable URL, so re-add for a
   fresh one.
 - **`--days N`** sets duration (default 7). The server clamps it to the org cap and the platform

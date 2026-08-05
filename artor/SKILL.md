@@ -506,7 +506,8 @@ login. A link is **view-only by default**; the one optional write surface is **g
 
 - **A live link is recopyable.** The full URL is printed at `share add` **and** re-displayed by
   `artor share list` for every link that's still live. So a lost link isn't gone — run `share list`
-  to copy it again. A **disabled** (turned-off) link shows `(off — reshare to copy)`; an **expired**
+  to copy it again. A **disabled** (turned-off) link shows `(off - reshare to copy)` (CLI 0.22.0
+  and older print it with an em-dash, `(off — reshare to copy)` - match either); an **expired**
   or **legacy** row shows `(reshare to copy)` — those have no recoverable URL, so re-add for a fresh one.
 - **`share list` also reports each live link's guest-commenting mode.** Each human line is
   tab-separated `<shareId> <mode> <state> <views> <url or hint>`, and a **live** link appends
