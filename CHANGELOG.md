@@ -7,6 +7,44 @@ uses pre-1.0 (0.x) semver — new user-visible capability bumps MINOR, fixes/doc
 After a version bump, users pull it with `claude plugin marketplace update artor && claude plugin
 update artor@artor` (update only fires on a version bump).
 
+## [0.18.1] - 2026-08-08
+
+Clarification fix: "view-only" was scoped correctly to the org-access boundary (no source pull, no
+remix, nothing else in the org), but two spots told an agent to relay it as a bare phrase to a
+user, with no scoping attached. Since the app now proxies a shared prototype's own writes to its
+running container, an agent following that instruction literally would tell a designer "this link
+is view-only" and the designer would reasonably conclude their contact form, login screen, or API
+route will not work for the client. It will. PATCH bump: this corrects wording about existing,
+already-documented behavior; it documents no new CLI capability.
+
+### Changed
+
+- **`artor/commands/share.md`**: the frontmatter `description` (line 2), the opening paragraph
+  (lines 9-11), the `--comments off` bullet (line 30), the older-server-notice bullet (line 42),
+  and the `share list` guest-word bullet (line 67) all now say plainly that "view-only" describes
+  what the visitor can reach **in the org** (no source pull, no remix, nothing else in the org),
+  not whether the prototype itself works. The prototype's own forms, API routes, and server
+  actions run normally for any visitor holding the link, regardless of the guest-commenting
+  setting. Added one plain-language limit alongside the clarification, taken from
+  `docs/sharing.md`: treat a shared link as a demo, not a place for real credentials or
+  destructive actions, because a shared prototype's own cross-site request protections can't be
+  relied on inside a shared preview. No internal mechanics (header names, `SameSite`/`Origin`
+  behavior) were pulled in - this skill is agent-facing guidance, not an internals doc.
+- **`artor/SKILL.md`** ("Share a prototype publicly"): the opening paragraph, the `--comments off`
+  parenthetical, the older-server-notice parenthetical, the `share list` guest-word bullet, and the
+  closing "Public previews are view-only" bullet all received the same clarification and the same
+  plain-language demo/credentials limit, so the same wording doesn't drift between the skill body
+  and the slash command.
+- **Fixed a related overclaim while correcting the wording**: both files previously said guest
+  commenting is "the one opt-in write surface" on a public link. That was true when it was
+  written, but it is no longer accurate: a shared prototype's own routes now accept writes on
+  their own, independent of the guest-commenting setting. Guest commenting gates one thing only:
+  whether an accountless visitor can post through Artor's own review-comment widget. It was never
+  and is not a gate on the prototype's own routes.
+- No CLI command, flag, or output shape changed. This is a documentation-only correction; no
+  drift guard was needed in `scripts/check-release.mjs` since the corrected wording isn't matched
+  verbatim by any downstream tooling.
+
 ## [0.18.0] - 2026-08-07
 
 Mirrors the artor app's per-share-subdomains rollout: `artor share` now prints a different URL

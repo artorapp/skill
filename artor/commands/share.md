@@ -1,14 +1,20 @@
 ---
-description: Create, list, extend, or turn off an anonymous public link to an Artor version, view-only by default with optional guest commenting.
+description: Create, list, extend, or turn off an anonymous public link to an Artor version - no other org access, but the prototype itself is fully interactive, with optional guest commenting.
 ---
 
 `artor share` mints **anonymous** links — anyone with the URL sees the prototype with
 no Artor login. This is the **only** way org content leaves the closed garden, so confirm intent
 before creating one, and never expose a version the user didn't mean to make public.
 
-Public links are **view-only by default**: no source pull, no remix, no other org access, and
-server-only secrets never load for a public visitor. The one opt-in write surface is **guest
-commenting** (below); everything else stays view-only either way.
+Public links are **view-only in terms of org access**: no source pull, no remix, nothing else in
+the org, and server-only secrets never load for a public visitor. The **prototype itself**, though,
+is fully interactive for anyone holding the link - its forms, API routes, and server actions run
+normally for a visitor, exactly as they do for a signed-in member. **Guest commenting** (below) is
+a separate, optional toggle: it only controls whether an accountless visitor can post through
+Artor's own review-comment widget, not whether the prototype's own routes accept writes (those
+always do, regardless of this setting). Treat a shared link as a demo, not a place for real
+credentials or destructive actions - a shared prototype's own cross-site request protections can't
+be relied on inside a shared preview.
 
 ## Create a link
 
@@ -27,8 +33,9 @@ artor share add [--days N] [--warn] [--comments off|anonymous|name|name-email]
 artor share add --mode pinned --deployment <id> [--days N] [--comments off|anonymous|name|name-email]
 ```
 
-- `off` keeps the link view-only; `anonymous` posts as "Anonymous guest"; `name` asks the
-  visitor for a name; `name-email` asks for a name and an email.
+- `off` turns off guest commenting only (Artor's review widget) - the prototype's own routes accept
+  writes either way; `anonymous` posts as "Anonymous guest"; `name` asks the visitor for a name;
+  `name-email` asks for a name and an email.
 - **The URL is a per-share subdomain**, e.g. `https://s-a1b2c3d4e5f6g7h8i9.preview.artor.app`
   (`s-` plus 18 lowercase alphanumeric characters), serving the shared version directly at its
   root. It's stable for the life of the share: safe to copy from the address bar and refresh-safe.
@@ -38,8 +45,11 @@ artor share add --mode pinned --deployment <id> [--days N] [--comments off|anony
   admin-set default, fine when the user says "just use the default", wrong when they had a
   preference you never asked about. On an interactive terminal the CLI itself asks with a picker.
 - `share add` prints the guest-commenting mode the link ended up with; report it back alongside
-  the URL. On an older server that predates guest commenting the CLI prints a notice that the
-  link is view-only; relay that honestly.
+  the URL. On an older server that predates guest commenting, the CLI prints a notice that the
+  link is view-only - relay that honestly, but don't let it imply the prototype won't work: it
+  means no org access beyond the prototype and no guest-comment feature on this link, not that
+  the prototype's own forms, API routes, or server actions are disabled (they run normally for
+  any visitor, on any server version).
 - **Guest comments are contained**: a commenting guest writes through the review widget only,
   own-threads-only visibility, self-asserted identity, nothing else in the org. Guest threads
   show up in `artor comments` marked `guest <alias>`; filter with `--guests-only` / `--no-guests`.
@@ -64,8 +74,8 @@ artor share off <shareId>
   `<shareId>` `<mode>` `<state>` `<views>` `<url or hint>` and, on a **live** link only,
   a trailing `guests: <mode>`. `<state>` is `off` for a turned-off link, else
   `expires in N days` or `expired`; `<views>` is `N view` / `N views`. The guest word is one of
-  `off`, `anonymous`, `name`, `name and email` - so a live view-only link still prints
-  `guests: off`. The suffix is **absent** on a dead (turned-off or expired) link, whose mode is
+  `off`, `anonymous`, `name`, `name and email` - so a live link with guest commenting off still
+  prints `guests: off`. The suffix is **absent** on a dead (turned-off or expired) link, whose mode is
   inert, and on an older server that doesn't send the field at all. Prefer `--json` when you need
   to parse this; the JSON carries `guestCommenting` as the raw enum (`name_email`, not
   `name and email`).

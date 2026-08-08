@@ -486,8 +486,15 @@ check `artor logs` when a preview shows a crash page.
 ## Share a prototype publicly
 
 `artor share` mints **anonymous** links — anyone with the URL can see the prototype, no Artor
-login. A link is **view-only by default**; the one optional write surface is **guest commenting**
-(below). This is the only way org content leaves the closed garden, so treat it carefully.
+login. A link is **view-only in terms of org access** - no source pull, no remix, nothing else in
+the org - but the **prototype itself** is fully interactive for any visitor holding the link: its
+forms, API routes, and server actions run normally, exactly as for a signed-in member. **Guest
+commenting** (below) is a separate, optional toggle that only controls whether an accountless
+visitor can post through Artor's own review-comment widget - it has no effect on whether the
+prototype's own routes accept writes (those always do). Treat a shared link as a demo, not a place
+for real credentials or destructive actions: a shared prototype's own cross-site request
+protections can't be relied on inside a shared preview. This is the only way org content leaves the
+closed garden, so treat it carefully.
 
 - **The URL is a per-share subdomain**, e.g. `https://s-a1b2c3d4e5f6g7h8i9.preview.artor.app`
   (`s-` plus an 18-character lowercase alphanumeric label), and it serves the shared version
@@ -503,11 +510,14 @@ login. A link is **view-only by default**; the one optional write surface is **g
   leave comments on it, and if so what identity — anonymous, name, or name + email? Then pass the
   answer explicitly: `artor share add --comments off|anonymous|name|name-email` (`name` asks the
   visitor for a name; `name-email` for a name and an email; `anonymous` posts as "Anonymous
-  guest"; `off` keeps the link view-only). Without `--comments`, a non-interactive run silently
-  keeps the org's admin-set default — fine when the user says "just use the default", wrong when
-  they had a preference you never asked about. `share add` prints the mode the link ended up
-  with; report it back alongside the URL. (On an older server that predates guest commenting the
-  CLI prints a notice that the link is view-only — relay that honestly.)
+  guest"; `off` turns off guest commenting only - the prototype's own routes accept writes either
+  way). Without `--comments`, a non-interactive run silently keeps the org's admin-set default —
+  fine when the user says "just use the default", wrong when they had a preference you never asked
+  about. `share add` prints the mode the link ended up with; report it back alongside the URL. (On
+  an older server that predates guest commenting, the CLI prints a notice that the link is
+  view-only - relay that honestly, but don't let it imply the prototype won't work: it means no org
+  access beyond the prototype and no guest-comment feature on this link, not that the prototype's
+  own forms, API routes, or server actions are disabled.)
 - **Guest comments are contained.** A commenting guest writes through the review widget only:
   own-threads-only visibility, self-asserted identity, no source pull, no remix, nothing else in
   the org. Guest threads show up in `artor comments` marked `guest <alias>` — filter with
@@ -520,17 +530,20 @@ login. A link is **view-only by default**; the one optional write surface is **g
   or **legacy** row shows `(reshare to copy)` — those have no recoverable URL, so re-add for a fresh one.
 - **`share list` also reports each live link's guest-commenting mode.** Each human line is
   tab-separated `<shareId> <mode> <state> <views> <url or hint>`, and a **live** link appends
-  `guests: off|anonymous|name|name and email`. A live view-only link still prints `guests: off`;
-  the suffix is absent on a dead (turned-off/expired) link and on an older server that doesn't
-  send the field. Use `share list --json` to parse it (`guestCommenting`, raw enum `name_email`).
+  `guests: off|anonymous|name|name and email`. A live link with guest commenting off still prints
+  `guests: off`; the suffix is absent on a dead (turned-off/expired) link and on an older server
+  that doesn't send the field. Use `share list --json` to parse it (`guestCommenting`, raw enum
+  `name_email`).
 - **`--mode pinned`** ties the link to **one fixed version** (pass `--deployment <id>`) — its bytes
   never change. **`--mode latest`** (the default) follows the newest publish.
 - **Duration** is `--days N` (default 7); the server clamps it to the org cap and platform ceiling
   (≤ 90 days). `--warn` emails the sharer ~24h before expiry.
 - **`artor share off <shareId>`** kills a link permanently — say **"turned off"**, never "revoked".
   A turned-off or expired link is **dead**; `extend` only re-clamps a _live_ link.
-- Public previews are view-only: **no source pull, no remix, no other org access**, and server-only
-  secrets never load for a public visitor.
+- Public previews are view-only **in terms of org access**: **no source pull, no remix, no other
+  org access**, and server-only secrets never load for a public visitor. The prototype's own forms,
+  API routes, and server actions work normally for any visitor holding the link (see the note
+  above); guest commenting is a separate opt-in for Artor's own comment widget only.
 
 ## Interpreting requests
 
