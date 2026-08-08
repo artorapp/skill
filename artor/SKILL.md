@@ -489,6 +489,15 @@ check `artor logs` when a preview shows a crash page.
 login. A link is **view-only by default**; the one optional write surface is **guest commenting**
 (below). This is the only way org content leaves the closed garden, so treat it carefully.
 
+- **The URL is a per-share subdomain**, e.g. `https://s-a1b2c3d4e5f6g7h8i9.preview.artor.app`
+  (`s-` plus an 18-character lowercase alphanumeric label), and it serves the shared version
+  directly at its root — no `/{token}/` path segment to strip, so a build's root-absolute assets
+  just work. It's **stable for the life of the share**: safe to copy straight from the browser
+  address bar, and refresh-safe (reloading the page never breaks it). `share add`, `share list`,
+  and `share extend` all print this form now. **Links minted before this shipped keep working
+  with no action needed** — the old `https://share.preview.artor.app/{token}` shape now
+  auto-redirects (one hop) to the new subdomain, so an existing link never needs to be re-shared
+  just because of this change.
 - **Ask whether they want comments.** When a user asks for a public link and hasn't said either
   way, ask ONE short question before minting: should visitors without an Artor account be able to
   leave comments on it, and if so what identity — anonymous, name, or name + email? Then pass the

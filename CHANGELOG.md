@@ -7,6 +7,49 @@ uses pre-1.0 (0.x) semver — new user-visible capability bumps MINOR, fixes/doc
 After a version bump, users pull it with `claude plugin marketplace update artor && claude plugin
 update artor@artor` (update only fires on a version bump).
 
+## [0.18.0] - 2026-08-07
+
+Mirrors the artor app's per-share-subdomains rollout: `artor share` now prints a different URL
+shape for every public link, and the skill needed to stop teaching the old one. MINOR bump —
+the printed output an agent relays to a user changed shape, and the skill gained a fact worth
+knowing (existing links keep working automatically) that it didn't carry before.
+
+### Changed
+
+- **`share add` / `share list` / `share extend` now print a per-share subdomain URL**, e.g.
+  `https://s-a1b2c3d4e5f6g7h8i9.preview.artor.app` — `s-` followed by an 18-character lowercase
+  alphanumeric label, addressed on the preview host. This replaces the previous token-in-path
+  form (`https://share.preview.artor.app/{token}`) as what the CLI prints going forward. Both
+  `artor/SKILL.md` ("Share a prototype publicly") and `artor/commands/share.md` ("Create a
+  link") now document the new shape with a concrete example, so an agent reporting a share link
+  back to a user shows the right thing and doesn't second-guess a URL that looks unfamiliar.
+- **The new URL serves the shared version directly at its root** — no `/{token}/` path prefix to
+  strip — which is why a build's root-absolute asset URLs (the default Vite/CRA output shape)
+  resolve correctly under it. Documented as the reason the shape changed, not just the shape
+  itself, so an agent understands why a link now looks like a plain subdomain instead of a path.
+- **Copy-from-address-bar and refresh are now both safe.** The per-share subdomain is stable for
+  the entire life of the share: reloading the page a visitor is on, or copying the URL straight
+  out of the browser's address bar instead of from the CLI/dashboard, both land on the same
+  working link. Called out explicitly in both docs pages since it's the practical payoff of the
+  new shape for anyone reviewing a shared prototype.
+- **Existing (legacy) links keep working with zero action from the user.** A link minted before
+  this shipped, in the old `https://share.preview.artor.app/{token}` shape, still resolves: it
+  now automatically 302-redirects, one hop, to the link's new canonical per-share subdomain. No
+  re-share, no new token, no CLI command to run — the old bookmarked or emailed URL just keeps
+  opening the prototype. Both docs pages state this plainly so an agent never tells a user to
+  regenerate a link solely because of this change.
+- **No skill guidance changed regarding "link stopped working after a refresh."** The skill never
+  carried that claim to begin with (nothing to walk back), but the new refresh-safety fact is
+  now documented affirmatively so an agent won't invent troubleshooting advice for a problem the
+  new URL shape doesn't have.
+- **Everything else about `artor share` is unchanged** and was re-verified against the CLI source
+  (`cli/src/commands/share.ts`) and `docs/sharing.md` while making this pass: the `--comments
+  off|anonymous|name|name-email` flag and its picker/org-default behavior, the dead-link hints
+  (`(off - reshare to copy)` / `(reshare to copy)` — a turned-off or expired link still shows no
+  recoverable URL and still must be reshared for a fresh one), the `share list` tab-separated line
+  format and its trailing `guests: <mode>` suffix, `--mode pinned|latest`, `--days`/`--warn`, and
+  the "turn off, never revoke" wording. None of it needed a correction.
+
 ## [0.17.3] - 2026-08-05
 
 Lockstep with the artor-cli 0.22.1 copy sweep: the CLI's shipped strings no longer use

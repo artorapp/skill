@@ -29,6 +29,11 @@ artor share add --mode pinned --deployment <id> [--days N] [--comments off|anony
 
 - `off` keeps the link view-only; `anonymous` posts as "Anonymous guest"; `name` asks the
   visitor for a name; `name-email` asks for a name and an email.
+- **The URL is a per-share subdomain**, e.g. `https://s-a1b2c3d4e5f6g7h8i9.preview.artor.app`
+  (`s-` plus 18 lowercase alphanumeric characters), serving the shared version directly at its
+  root. It's stable for the life of the share: safe to copy from the address bar and refresh-safe.
+  An older link (`https://share.preview.artor.app/{token}`) still works — it auto-redirects to
+  the new subdomain, no reshare needed.
 - Without `--comments`, a non-interactive run (any agent-driven run) silently keeps the org's
   admin-set default, fine when the user says "just use the default", wrong when they had a
   preference you never asked about. On an interactive terminal the CLI itself asks with a picker.
