@@ -1,5 +1,5 @@
 ---
-description: Create, list, extend, or turn off an anonymous public link to an Artor version - no other org access, but the prototype itself is fully interactive, with optional guest commenting.
+description: Create, list, edit, extend, or turn off an anonymous public link to an Artor version - no other org access, but the prototype itself is fully interactive, with optional guest commenting.
 ---
 
 `artor share` mints **anonymous** links — anyone with the URL sees the prototype with
@@ -66,6 +66,7 @@ artor share add --mode pinned --deployment <id> [--days N] [--comments off|anony
 
 ```bash
 artor share list [--json]             # this project's links (run in the linked dir)
+artor share set <shareId> [--comments off|anonymous|name|name-email]
 artor share extend <shareId> [--days N]
 artor share off <shareId>
 ```
@@ -79,6 +80,17 @@ artor share off <shareId>
   inert, and on an older server that doesn't send the field at all. Prefer `--json` when you need
   to parse this; the JSON carries `guestCommenting` as the raw enum (`name_email`, not
   `name and email`).
+- **`set` changes a LIVE link's guest-commenting mode** and nothing else: same URL, same expiry,
+  only the mode moves, and the CLI prints the mode the link ended up with. Always pass
+  `--comments` from an agent-driven run - unattended, a missing `--comments` fails loud
+  ("--comments is required when not running interactively") instead of quietly no-opping; on an
+  interactive terminal the CLI asks with a picker instead (Esc cancels, printing "Cancelled - no
+  changes.", and there is no "Org default" row because the link already has a value). A dead
+  (turned-off or expired) link answers "No such live link (it may have been turned off or
+  expired)" - reshare for a fresh link. The caller must be the link's **creator or an org admin**,
+  and the project's Space must be writable to them (a read-only Space viewer gets "this project's
+  space is read-only for you"; the fix is joining the space, or org-admin break-glass). `set`
+  needs the current `artor` CLI - if it comes back as an unknown command, run `artor update`.
 - `extend` only re-clamps a **live** link.
 - `off` kills a link **permanently** — say **"turned off"**, never "revoked". A turned-off or
   expired link is **dead**; to share again, create a new link (fresh token). `extend` cannot

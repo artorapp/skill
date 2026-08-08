@@ -7,6 +7,66 @@ uses pre-1.0 (0.x) semver — new user-visible capability bumps MINOR, fixes/doc
 After a version bump, users pull it with `claude plugin marketplace update artor && claude plugin
 update artor@artor` (update only fires on a version bump).
 
+## [0.19.0] - 2026-08-08
+
+Mirrors a new `artor` CLI subcommand: `artor share set <shareId> [--comments
+off|anonymous|name|name-email]`, the bearer twin of the dashboard's "Edit public share link"
+dialog. Until now the guest-commenting mode of a public link could only be chosen when the link
+was minted (`share add --comments ...`); changing your mind meant turning the link off and
+resharing, which hands out a brand new URL. `set` edits a LIVE link in place instead. MINOR bump:
+an agent gains the ability to do something it could not do before.
+
+### Added
+
+- **`artor/SKILL.md`, "Share (anonymous public links)" table**: a new row,
+  `Change a live link's guest commenting` -> `artor share set <shareId> [--comments
+off|anonymous|name|name-email]`, sitting between the mint-time rows and `share list`.
+- **`artor/SKILL.md`, "Share a prototype publicly"**: a new bullet documenting `share set` in
+  full, placed just before the `--mode pinned` bullet so the mint-time story reads first:
+  - It edits an existing link **in place**: same URL, same expiry, only the guest-commenting mode
+    changes, and the CLI prints the mode the link ended up with (the same
+    `Guest commenting: ...` line `share add` prints).
+  - **Pass `--comments` explicitly on any agent-driven run.** Unattended and without it, the
+    command fails loud ("--comments is required when not running interactively") rather than
+    silently no-opping, so an agent that forgets the flag gets a clear error instead of a
+    reported-but-unmade change.
+  - **On an interactive terminal the CLI asks with a picker** instead. It is the `share add`
+    picker minus the "Org default" row, because an existing link already carries a value; Esc
+    cancels with "Cancelled - no changes." and writes nothing.
+  - **Only a LIVE link can be edited.** A turned-off or expired one answers "No such live link
+    (it may have been turned off or expired)" - the remedy is a reshare (new link, new URL), never
+    an attempt to resurrect the dead one, which matches the existing `extend` semantics.
+  - **Permission**: the link's creator, or an org admin. Separately, the project's Space must be
+    writable to the caller; a read-only Space viewer gets its own distinct error ("this project's
+    space is read-only for you") whose fix is joining the space or org-admin break-glass, not
+    asking the link's creator.
+  - **Version note**: `set` needs the current `artor` CLI, so an "unknown command" answer means
+    run `artor update` and retry.
+- **`artor/SKILL.md`, "Interpreting requests"**: a phrasing-to-command line so the intent is
+  routed without inventing a flow, "stop guests commenting on that link" / "let people comment on
+  it" -> `artor share set <shareId> --comments ...`, with the reminder that the id comes from
+  `artor share list` and that the URL and expiry are untouched.
+- **`artor/commands/share.md`, "Manage links"**: `artor share set <shareId> [--comments
+off|anonymous|name|name-email]` added to the code block (above `extend`, matching the CLI's own
+  usage ordering), plus a bullet carrying the same facts as the SKILL.md bullet, so the slash
+  command and the skill body cannot drift on this command.
+
+### Changed
+
+- **`artor/SKILL.md` share table wording**: the existing `--comments` row was labelled "Set the
+  link's guest-commenting mode", which now reads ambiguously next to `set`. It is retitled
+  "Set guest commenting when minting" so the two rows say plainly which is create-time and which
+  edits an existing link. The command itself is unchanged.
+- **`artor/commands/share.md` frontmatter description**: "Create, list, extend, or turn off"
+  becomes "Create, list, edit, extend, or turn off", since editing a link is now part of what the
+  command covers.
+- Verified the pre-existing claim in this release: `share add --comments
+off|anonymous|name|name-email` was already documented in both the SKILL.md table and
+  `commands/share.md` (shipped in 0.17.0), so nothing was missing there and nothing was added.
+- No other command, flag, or output shape changed, and no drift guard was added to
+  `scripts/check-release.mjs` - this release introduces no cross-file contradiction to guard, and
+  the wording it adds is not matched verbatim by any downstream tooling.
+
 ## [0.18.1] - 2026-08-08
 
 Clarification fix: "view-only" was scoped correctly to the org-access boundary (no source pull, no

@@ -109,7 +109,8 @@ framework dependency (e.g. `next`), **not** the workspace root. The `.artor` lin
 | --------------------------------------- | ------------------------------------------------------------ |
 | Share one fixed version                 | `artor share add --mode pinned --deployment <id> [--days N]` |
 | Share a link that follows newest        | `artor share add [--mode latest] [--days N] [--warn]`        |
-| Set the link's guest-commenting mode    | `artor share add --comments off\|anonymous\|name\|name-email` |
+| Set guest commenting when minting        | `artor share add --comments off\|anonymous\|name\|name-email` |
+| Change a live link's guest commenting    | `artor share set <shareId> [--comments off\|anonymous\|name\|name-email]` |
 | List + recopy this project's live links | `artor share list [--json]`                                  |
 | Extend a live link                      | `artor share extend <shareId> [--days N]`                    |
 | Turn a link off (dead, not "revoke")    | `artor share off <shareId>`                                  |
@@ -534,6 +535,19 @@ closed garden, so treat it carefully.
   `guests: off`; the suffix is absent on a dead (turned-off/expired) link and on an older server
   that doesn't send the field. Use `share list --json` to parse it (`guestCommenting`, raw enum
   `name_email`).
+- **Change a live link's guest commenting** with
+  `artor share set <shareId> --comments off|anonymous|name|name-email`. It edits an existing link
+  in place: same URL, same expiry, only the guest-commenting mode changes, and the CLI prints the
+  mode the link ended up with. Pass `--comments` explicitly on any agent-driven run: without it,
+  an unattended run fails loud ("--comments is required when not running interactively") rather
+  than silently doing nothing, and an interactive terminal shows a picker instead (Esc cancels
+  with "Cancelled - no changes."; there is no "Org default" row, since an existing link already
+  has a value). Only a **live** link can be edited - a turned-off or expired one answers "No such
+  live link (it may have been turned off or expired)", so reshare for a fresh link instead. The
+  caller must be the link's **creator or an org admin**, and the project's Space must be writable
+  to them (a read-only Space viewer gets a clear "this project's space is read-only for you"
+  error, fixed by joining the space, or by org-admin break-glass). `set` needs the current `artor`
+  CLI - if the command comes back unknown, run `artor update` and retry.
 - **`--mode pinned`** ties the link to **one fixed version** (pass `--deployment <id>`) — its bytes
   never change. **`--mode latest`** (the default) follows the newest publish.
 - **Duration** is `--days N` (default 7); the server clamps it to the org cap and platform ceiling
@@ -553,6 +567,9 @@ closed garden, so treat it carefully.
 - "give me a public link" → ask whether guests may comment (see "Share a prototype publicly"),
   then `artor share add --comments <answer>` (default follows latest), or `artor share list` to
   recopy an existing live one.
+- "stop guests commenting on that link" / "let people comment on it" → `artor share set <shareId>
+  --comments off|anonymous|name|name-email` (get the id from `artor share list`; the link, its URL
+  and its expiry all stay as they are).
 - "get me the link" → `artor open --json` (reads the URL without opening a browser), or read the
   URL from the last `publish` output.
 - "remix / fork this" → `artor remix <project>` (new project you own), not `pull`.
