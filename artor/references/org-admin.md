@@ -12,13 +12,22 @@ Both `env` and `mock` (below) share the same three-level scope model and flag gr
 - **No flag, run inside a linked project** → the **project** scope (every version of that one
   prototype). This is the default — a behavior change from earlier releases, which defaulted to
   the org; see the CLI changelog.
-- **`--org`** → the org scope (every node-server deployment in the org, unless overridden by a
-  project or version row).
+- **`--scope org`** → the org scope (every node-server deployment in the org, unless overridden by
+  a project or version row). **This is the canonical spelling.** The bare **`--org` is a deprecated
+  alias** here: it still works and prints a one-line stderr note, but `--org <ref>` names a target
+  **organization** everywhere else in the CLI, while `env`/`mock` always act on the org linked to
+  the current folder. To change organization, run `artor org use`.
 - **`--version <ref>`** → exactly one immutable version's scope (`<ref>` = alias, version number,
-  or content hash).
-- Outside a linked project, `set`/`rm` (and `mock set`/`rm`/`pin`) with no `--org` are a **loud
+  or content hash); it implies `--scope version`. **`--scope project`** names the default
+  explicitly.
+- Outside a linked project, `set`/`rm` (and `mock set`/`rm`/`pin`) with no org scope are a **loud
   error** — "Not in a linked project. Run inside one, or pass --org for the org scope." There is no
   silent org-wide fallback for a mutating verb.
+- **Guard rails:** a duplicate or incoherent selector is refused rather than resolved; `--org`
+  passed where a sub-command has no place for it (`env list --org acme`) is a hard error explaining
+  both meanings, never a quiet read of another org; and an EMPTY value (`--version=`,
+  `--version ""`) fails loud instead of silently downgrading to project scope. Both `--scope org`
+  and `--scope=org` parse identically.
 - **Permission depends on the resolved scope, not how it was reached:** org scope is **admin-only**
   for `set`/`rm`; project or version scope only needs a **publisher seat** (mirrors `artor
   publish`'s gate) — any publisher can manage the config of a prototype they're actively working on.
@@ -31,13 +40,21 @@ Two visibility classes for env vars:
   **never** downloadable.
 
 ```bash
-artor env set KEY=VALUE [--local]   [--org | --version <ref>]  # local/pullable or server-only (default)
-artor env list [--json]             [--org | --version <ref>]  # (alias ls) — names + class ONLY
-artor env rm KEY                     [--org | --version <ref>]  # (alias remove)
+artor env set KEY=VALUE [--local]   [--scope org|project|version] [--version <ref>]
+artor env set KEY --stdin [--local] [--scope org|project|version] [--version <ref>]
+artor env list [--json]             [--scope org|project|version] [--version <ref>]  # (alias ls)
+artor env rm KEY                     [--scope org|project|version] [--version <ref>]  # (alias remove)
 artor env pull                       # linked project's EFFECTIVE (project + org merged) vars
-                                      # -> ./.env.local; org-only when not linked; --org restores
-                                      # the old org-only pull; no --version variant
+                                      # -> ./.env.local; org-only when not linked; takes no
+                                      # scope flags
 ```
+
+- **`env set KEY --stdin` reads the value from stdin** so a secret never lands in shell history or
+  a process listing, the preferred form for any real credential:
+  `printf %s "$SECRET" | artor env set STRIPE_KEY --stdin`. Exactly one trailing newline is
+  stripped, everything else round-trips byte for byte. `KEY=VALUE` together with `--stdin` is
+  refused (one value would be discarded), an empty stdin read errors naming the piped form, and run
+  against a terminal it refuses and prints the pipe form rather than echoing the secret on screen.
 
 - **Values are write-only** — `list` returns names + class, never the value.
 - **Resolution is a live merge at every container cold start** — `version > project > org` — so
@@ -54,10 +71,10 @@ Fixtures served at `/__mock/<name>` — but only as a **fallback**: a deployment
 `mocks/<name>.json` wins over a project/org mock, at snapshot time (see below).
 
 ```bash
-artor mock set <name> <file.json>    [--org | --version <ref>]  # upload; server validates
-artor mock list [--json]             [--org | --version <ref>]  # (alias ls) — name + bytes
-artor mock rm <name>                  [--org | --version <ref>]  # (alias remove)
-artor mock revisions <name>          [--org]                     # edit history: sha, author,
+artor mock set <name> <file.json>    [--scope org|project|version] [--version <ref>]
+artor mock list [--json]             [--scope org|project|version] [--version <ref>]  # (alias ls)
+artor mock rm <name>                  [--scope org|project|version] [--version <ref>]  # (alias remove)
+artor mock revisions <name>          [--scope org]                # edit history: sha, author,
                                       # date, which live versions use it (org or project scope
                                       # only — a version has exactly one pin, not a history)
 artor mock pin <name> <sha> --version <ref>
@@ -73,9 +90,14 @@ artor mock promote <name> [--ref <r>] # copy a version's bundled mocks/<name>.js
   editing the org/project mock afterward never changes an already-published version's served data,
   only what the *next* publish snapshots. `artor mock pin` is the deliberate escape hatch to repoint
   an already-shipped version without a republish.
-- `pull`/`status`/`revisions` work on the **linked project only** — no `--org`/`--version` variant
-  (they reject those flags loudly rather than silently ignoring them; `revisions` does accept
-  `--org` to read the org's history instead of the project's).
+- `pull`/`status`/`promote` work on the **linked project only** - no scope variant (they reject a
+  scope flag loudly, naming the form to run, rather than silently ignoring it). `revisions` accepts
+  `--scope org` to read the org's history instead of the project's, and nothing else.
+- **Local shape checks come before the network.** Every verb validates `<name>` against the same
+  grammar the server enforces (letters, digits, `_`/`-`, ≤64 chars), and `mock pin` validates the
+  `<sha>` shape (64 lowercase hex chars), so a typo fails fast with a precise message. A "no such
+  revision" answer therefore means the sha is genuinely not a revision of that mock - copy it
+  exactly from `artor mock revisions <name>`.
 - `promote` requires a **linked project**; `--ref` defaults to `latest`. It copies the published
   version's bundled `mocks/<name>.json` into the org dataset.
 - Get a sha to pin with `artor mock revisions <name>`, then `artor mock pin <name> <sha> --version
@@ -142,9 +164,17 @@ artor space members <space> add <email-or-id> [--role admin|member]
 artor space members <space> rm <email-or-id>
 ```
 
-- `<space>` resolves by exact id or case-insensitive name; members by **email or user id** (run
-  `artor org members` for the roster). Organization/Personal Spaces appear in `list` but reject
-  rename/delete/member ops.
+- `<space>` resolves by id, exact name, or a **unique partial** (prefix then substring; ambiguity
+  lists the candidates and does nothing); members by **email or user id** (run `artor org members`
+  for the roster). Organization/Personal Spaces appear in `list` but reject rename/delete/member
+  ops.
+- **`read` and `members add|rm` move the access wall, so they ask.** Interactively they confirm
+  naming the **fully resolved** space (`Let EVERY org member read "Design Ops (client NDA)"?`), so
+  a typed `Design` can never silently open a space you were not shown. **Unattended (`--yes` or no
+  terminal) a partial ref is refused** - as is one for `space rm` and its `--move-to <folder>`.
+  From an agent-driven run, name those targets **exactly** (id or full name). An exact ref is never
+  questioned; `artor space members <space>` with no action is read-only and keeps the partial
+  ladder.
 - **`read on` is a deliberate widening.** Every org member can then see the Space, open its
   prototypes, and **comment** — and nothing else. Publish, rename, move, trash, share, folder ops,
   env vars and mocks all fail with **403 `space_read_only`** (not a 404 — the caller can already
@@ -183,6 +213,24 @@ artor folder clear <ref> [--yes]
   each kind gets its own "Draft" and its own namespace of folder names. `artor folder` run
   inside a linked slides project automatically targets slides folders; run inside a prototype
   it targets prototype folders. There's no cross-kind folder move.
+
+## Plan usage - `artor usage`
+
+What the org has consumed against its plan limits. **Owner/admin only** (the same gate as
+Settings, Usage in the dashboard); a non-admin and a non-member both get the same 403.
+
+```bash
+artor usage [--org <ref>] [--json]
+```
+
+- Reports the **plan**, **storage** used (with the age of the reading), **publisher seats**, and
+  **public-link views** over the last 30 days.
+- Org resolution: `--org <ref>` wins (a present-but-empty value is refused, never read as absent),
+  else the **linked folder's** org, else the saved default / token org. `--json` names the org too.
+- **Read each cap honestly, they are not interchangeable:** a `null` storage or views cap means
+  **unlimited**; a `null` seat cap means the tier bills **per seat**, NOT unlimited; and a
+  never-measured storage reading says so rather than showing `0`. Don't collapse those into
+  "no limit".
 
 ## Operator (platform super-admins)
 

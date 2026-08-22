@@ -10,16 +10,33 @@ Run the `artor` CLI from the project root. Every published version gets a perman
 preview URL; review comments and shared org knowledge (skills, env vars, mock datasets, registries)
 attach to the project. `artor --help` prints the full command surface — this skill covers the
 workflows you'll drive most. **Prefer `--json` on read commands** (artor-cli ≥ 0.14): `status`,
-`whoami`, `project list|search`, `share list`, `comments`, `trash`, `folder list`, `space list`,
-`env list`, `mock list`, `skill list`, `logs`, and `open` (prints `{ "url": … }` **without** launching a browser —
-ideal for grabbing the preview URL headlessly). It prints the payload to stdout and suppresses the
-human rendering. If `--json` is rejected, the CLI is older — `artor update`. For write commands
-(no `--json`), report the exact CLI output rather than paraphrasing.
+`whoami`, `org list`, `project list|search`, `share list`, `comments`, `trash`, `usage`,
+`folder list`, `space list`, `env list`, `mock list`, `skill list`, `logs`, and `open` (prints
+`{ "url": … }` **without** launching a browser - ideal for grabbing the preview URL headlessly).
+It prints the payload to stdout and suppresses the human rendering. Two **write** commands emit
+`--json` too: `artor publish` (one object - `version`, `url`, `aliases`, `artifactType`, plus
+`replaced` when the server reports it - with every progress line on stderr) and `artor init`
+(`projectId`, `slug`, `name`, `orgId`, plus `spaceId`/`folderId` when it chose them). Under
+`--json` those two never prompt: it is a scripted run by contract, so a multi-org `init` needs
+`--org`, and a `next.config` patch or a mock-drift conflict fails loud asking for `--yes` /
+`--mocks=local|server` rather than editing or hanging. If `--json` is rejected, the CLI is
+older - `artor update`. For write commands with no `--json`, report the exact CLI output rather
+than paraphrasing.
 
 ## First check
 
-- `artor status` — local, read-only: is this dir linked, and who am I? (no network unless logged in).
-- `artor whoami` — the signed-in user and active org (else `artor login`).
+- `artor status` - is this dir linked, who am I, and **which org will commands actually target**?
+- `artor whoami` - the signed-in user and the same **active org**, with your role (else `artor login`).
+- **Never guess the org - read it.** Both commands report the **active** org: the one commands
+  actually target, resolved as **linked folder org → saved default (`artor org use`) → the token's
+  home org**. `--json` on either adds `activeOrg`, `role`, `homeOrgMismatch` and `orgsUnavailable`;
+  read those fields instead of inferring an org from a project slug or a past command. The token's
+  **home** org is identity only, never the operation target, and is shown only when it differs
+  (`homeOrgMismatch: true`) - say so plainly rather than reporting two orgs as a contradiction.
+  `orgsUnavailable: true` means the membership listing did not answer, so the org is **unknown**,
+  not missing - don't tell the user they lost a membership, and don't suggest `artor link`.
+  An `activeOrg` of `null` with `orgsUnavailable: false` is a stale `.artor` or a revoked
+  membership; the CLI prints the recovery step, relay it.
 - A project is linked once via `.artor/project.json`. If absent, run `artor init` (to create a new
   project) or `artor link` (to attach to an existing one — a teammate who `git clone`d an
   already-linked repo runs `artor link`; the CLI takes no position on whether `.artor/project.json`
@@ -45,23 +62,70 @@ framework dependency (e.g. `next`), **not** the workspace root. The `.artor` lin
 - **Then `cd` into the target app** (e.g. `cd apps/web`) and run `artor init`, then `artor publish`.
 - If the user hasn't said which app, ask which subfolder to publish rather than guessing.
 
+## CLI conventions (help, refs, confirms, flags)
+
+Four rules hold across the whole CLI, so they are stated once here rather than repeated per command.
+
+- **Help works everywhere, and never acts.** `-h` / `--help` is honored on **every** command and
+  **anywhere in the arguments**, answered before any auth, config, or network work - so
+  `artor publish --help` prints usage and **does not publish**. `artor help` prints the top-level
+  usage; `artor help <command>` prints one command's. A mistyped command says so and offers the
+  closest real one (`unknown command "pubish"` → `Did you mean "artor publish"?`). The suggester
+  is deliberately conservative and **never points at `artor rm`** - a two-character command must be
+  typed exactly. Use `-h` to check a flag rather than guessing it.
+- **Refs accept partial matches.** Anywhere a command takes an org, prototype, folder, space,
+  skill, public link, or comment thread, you may pass an **id**, the **exact name/slug**, or a
+  **unique partial** - resolved in one ladder: exact id (case-sensitive), exact slug/name
+  (case-insensitive), unique prefix, unique substring. A ref matching **2+ items is ambiguous at
+  every tier** - the CLI lists the candidates and does nothing. It never guesses, so treat an
+  ambiguity message as a request for a more specific ref (or the id), never as a failure to retry.
+  - **Public links** (`share set|extend|off`) match on the **full id or a 4+ character id prefix**
+    (a prefix is resolved against the linked project's links; a full id works from anywhere).
+  - **Comment threads** (`comments resolve|reopen|ignore|unignore`) accept the full uuid, the
+    **8-character short id** printed at the end of each listing row, any unique **4+ character
+    prefix** of it, or **`#N`**, the listing's row number (quote it: `"#3"`). A prefix or `#N` costs
+    one listing read, so pass the **same** `--version` / `--open` / `--guests-only` / `--no-guests`
+    flags you listed with.
+  - **Unattended runs must name a destructive target exactly.** Partial matching exists for a human
+    who reads the confirm line - and `--yes` (or no terminal) skips that line. So `artor rm`,
+    `artor folder rm` / `clear`, `artor space rm` (its `--move-to` folder too), `artor space read`,
+    `artor space members add|rm`, `artor skill rm`, `artor skill pin --yes`, `artor share off`, and
+    `artor pull --project <ref> --force` all **refuse a prefix/substring hit** when they cannot ask,
+    and destroy nothing. **`--org` takes the same rail on those runs** - it picks the tenant, so it
+    must be exact too. As an agent you are an unattended run: **pass the exact id or full
+    slug/name for anything destructive**, and use a partial only for reads and reversible writes
+    (`restore`, `rename`, `remix`, `pull` without `--force`).
+- **Confirmations have one grammar.** `-y` / `--yes` anywhere in the arguments pre-approves and
+  skips the prompt. **Declining exits `1`** with `✗ Cancelled.` on stderr - a non-zero exit after a
+  destructive command may mean "the user said no", not "it broke", so read the message before
+  retrying. With **no interactive terminal and no `-y`**, the command fails with an actionable line
+  naming the flag; it is never a silent yes. Prompts draw on **stderr**, so `--json`/piped stdout
+  stays clean.
+- **Both flag spellings work everywhere.** `--flag value` and the GNU `--flag=value` form are read
+  by the same parser for every value-taking flag, so `artor pull --project=old-demo --org=acme` is
+  exactly the spaced form. An **empty** value (`--org ""`, `--org=`, or a trailing `--org` with
+  nothing after it) is refused loudly, never read as absent - so an unset shell variable can't
+  silently retarget another org.
+
 ## Command reference
 
 **Auth & identity**
 
-| Goal                                  | Command                                         |
-| ------------------------------------- | ----------------------------------------------- |
-| Authorize this machine                | `artor login`                                   |
-| Who am I / active org                 | `artor whoami`                                  |
-| Is this dir linked + who am I (local) | `artor status`                                  |
-| Clear the stored token                | `artor logout`                                  |
-| List / set your default org (2+ orgs) | `artor org list` / `artor org use [<id\|slug>]` |
+| Goal                                  | Command                                             |
+| ------------------------------------- | --------------------------------------------------- |
+| Authorize this machine                | `artor login`                                       |
+| Who am I / active org + role          | `artor whoami [--json]`                             |
+| Is this dir linked + active org       | `artor status [--json]`                             |
+| Clear the stored token                | `artor logout`                                      |
+| List / set your default org (2+ orgs) | `artor org list [--json]` / `artor org use [<ref>]` |
+| List the active org's members         | `artor org members`                                 |
+| Usage against the org's plan limits   | `artor usage [--org <ref>] [--json]` (owner/admin)  |
 
 **Project lifecycle**
 
 | Goal                                     | Command                                                                            |
 | ---------------------------------------- | ---------------------------------------------------------------------------------- |
-| Create + link a project here             | `artor init [--name "My App"] [--space <s>] [--folder <f>] [--org <slug>] [--no-git]` |
+| Create + link a project here             | `artor init [--name "My App"] [--space <s>] [--folder <f>] [--org <ref>] [--no-git] [--json]` |
 | Create + link a **slide deck**           | `artor init --slides [...]` (canonical) or `artor slides init [...]` (alias)        |
 | Scaffold from an org template            | `artor init --template <slug> [--here] [--no-install]`                             |
 | Attach this dir to an EXISTING project   | `artor link [<id\|slug>] [--org <slug>] [--force]`                                 |
@@ -69,10 +133,10 @@ framework dependency (e.g. `next`), **not** the workspace root. The `.artor` lin
 | Download a version's source, stay linked | `artor pull [--ref <r>] [--dir <p>] [--project <slug>] [--force]`                  |
 | Bulk-export source of EVERY org project  | `artor dump [--all-versions] [--out <dir>]`                                        |
 | Fork a project into a NEW one you own    | `artor remix <project> [name] [--name <n>] [--org <slug>] [--ref <r>] [--dir <p>]` |
-| Rename a project's display name          | `artor rename [<slug>] "New Name"`                                                 |
-| Trash a project (recoverable 30 days)    | `artor rm [<slug>] [--yes]`                                                        |
-| Restore a trashed project                | `artor restore <slug>`                                                             |
-| List trashed projects + time left        | `artor trash`                                                                      |
+| Rename a project's display name          | `artor rename [<ref>] "New Name" [--org <ref>]`                                    |
+| Trash a project (recoverable 30 days)    | `artor rm [<ref>] [--org <ref>] [--yes]`                                           |
+| Restore a trashed project                | `artor restore <ref> [--org <ref>]`                                                |
+| List trashed projects + time left        | `artor trash [--org <ref>] [--json]`                                               |
 | Organize prototypes into folders         | `artor folder list\|create\|rename\|color\|move\|rm\|clear`                        |
 | Control WHO can reach a set of prototypes | `artor space list\|create\|rename\|read\|rm\|members`                              |
 
@@ -83,6 +147,12 @@ framework dependency (e.g. `next`), **not** the workspace root. The `.artor` lin
 > added to every project, not only on a name clash, so that creating a prototype cannot reveal
 > whether a name is already taken in a Space the user cannot see.
 
+> **`artor trash` is org-aware now.** It resolves the org the same way `restore`/`rm` do
+> (`--org <ref>` → linked folder → saved default → token org) and names the org in its heading, so
+> the listing and the `artor restore <ref>` you print next always look at the same tenant.
+> Previously it always fell back to the token's home org, which could list a **different** org's
+> trash than `restore` would search.
+
 **Publish, open, review**
 
 | Goal                                        | Command                                                    |
@@ -90,7 +160,8 @@ framework dependency (e.g. `next`), **not** the workspace root. The `.artor` lin
 | Publish the next version (builds on demand) | `artor publish` (alias `artor push`)                       |
 | Publish with a changelog                    | `artor publish --message "<summary>"` (`-m`)               |
 | Publish with a label (one line, max 128 chars) | `artor publish --label "dark-mode"`                   |
-| Publish and move a named alias              | `artor publish -v staging`                                 |
+| Publish and move a named alias              | `artor publish --alias staging` (short `-v`)               |
+| Publish for a script / agent                | `artor publish --json` (one JSON object on stdout)         |
 | Reuse an existing build / skip install      | `artor publish --no-build` / `--no-install`                |
 | Skip the web-sdk update check (see notes)   | `artor publish --no-sdk-update`                            |
 | Force artifact type / entry / output dir    | `artor publish --static\|--node [--entry <s>] [--dir <p>]` |
@@ -99,8 +170,8 @@ framework dependency (e.g. `next`), **not** the workspace root. The `.artor` lin
 | Open the latest / a specific version        | `artor open` / `artor open --version 3` / `--alias <name>` |
 | Get the preview URL without a browser       | `artor open --json` (prints `{ "url": … }`, no launch)     |
 | Read review comments on a version           | `artor comments [--version <ref>] [--open] [--guests-only\|--no-guests] [--json]` |
-| Resolve / reopen a comment thread           | `artor comments resolve <threadId>` / `reopen <threadId>`  |
-| Exclude / re-include a thread from AI passes | `artor comments ignore <threadId>` / `unignore <threadId>` |
+| Resolve / reopen a comment thread           | `artor comments resolve <thread>` / `reopen <thread>`      |
+| Exclude / re-include a thread from AI passes | `artor comments ignore <thread>` / `unignore <thread>`    |
 | Read a version's runtime/crash logs         | `artor logs [ref] [--json]`                                |
 
 **Share (anonymous public links)**
@@ -110,37 +181,66 @@ framework dependency (e.g. `next`), **not** the workspace root. The `.artor` lin
 | Share one fixed version                 | `artor share add --mode pinned --deployment <id> [--days N]` |
 | Share a link that follows newest        | `artor share add [--mode latest] [--days N] [--warn]`        |
 | Set guest commenting when minting        | `artor share add --comments off\|anonymous\|name\|name-email` |
-| Change a live link's guest commenting    | `artor share set <shareId> [--comments off\|anonymous\|name\|name-email]` |
+| Change a live link's guest commenting    | `artor share set <share> [--comments off\|anonymous\|name\|name-email]` |
 | List + recopy this project's live links | `artor share list [--json]`                                  |
-| Extend a live link                      | `artor share extend <shareId> [--days N]`                    |
-| Turn a link off (dead, not "revoke")    | `artor share off <shareId>`                                  |
+| Extend a live link                      | `artor share extend <share> [--days N]`                      |
+| Turn a link off (dead, not "revoke")    | `artor share off <share>`                                    |
+
+`<share>` is a link id from `artor share list`, or a **unique 4+ character prefix** of one
+(resolved against the linked project's links, so a prefix needs to run inside the project; a full
+id works from anywhere). `share off` is irreversible: a **prefix** there is confirmed with the
+resolved id named, and **refused unattended** - pass the full id from an agent-driven run.
 
 **Org/project/version knowledge** (set/admin actions need an owner/admin role at org scope, a
 publisher seat at project/version scope — details: `references/org-admin.md`)
 
 | Goal                                         | Command                                                                                      |
 | -------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| Set / list / remove env vars                 | `artor env set KEY=VALUE [--local]` / `list [--json]` / `rm KEY` / `pull` `[--org \| --version <ref>]` |
-| Mock datasets (fallback at `/__mock/<name>`) | `artor mock set <name> <file.json>` / `list [--json]` / `rm <name>` / `revisions <name>` / `pin <name> <sha> --version <ref>` / `pull` / `status [--json]` / `promote <name> [--ref <r>]` `[--org \| --version <ref>]` |
+| Set / list / remove env vars                 | `artor env set KEY=VALUE [--local]` / `set KEY --stdin` / `list [--json]` / `rm KEY` / `pull` `[--scope org\|project\|version] [--version <ref>]` |
+| Mock datasets (fallback at `/__mock/<name>`) | `artor mock set <name> <file.json>` / `list [--json]` / `rm <name>` / `revisions <name>` / `pin <name> <sha> --version <ref>` / `pull` / `status [--json]` / `promote <name> [--ref <r>]` `[--scope org\|project\|version] [--version <ref>]` |
 | Org skills (pinned git sources)              | `artor skill add <gh-url> [--name X] [--ref <r>] [--credential <t>] [--enforced]` / …        |
 | Org starter templates                        | `artor template push --name X [--slug y] [--desc z]` / `list`                                |
 | Private registry providers                   | `artor registry add <@scope> --type azure\|npmjs [--name <l>] [--expires <d>]` / … / `login` |
 
-**New this release: Spaces — the access wall.** `artor space` manages who in the org can reach a
+**New this release: `artor usage`.** `artor usage [--org <ref>] [--json]` reports what the org has
+consumed against its plan limits - plan, storage used (with the age of the reading), publisher
+seats, and public-link views over the last 30 days. **Owner/admin only**; a non-admin and a
+non-member get the same 403. Read the caps honestly: a `null` storage/views cap is **unlimited**,
+but a `null` seat cap means the tier bills **per seat**, and a never-measured storage reading says
+so rather than showing `0`. Details: `references/org-admin.md`.
+
+**Spaces - the access wall.** `artor space` manages who in the org can reach a
 set of prototypes (**Org → Space → Folder → Prototype**); folders are cosmetic *within* a Space.
 `artor space read <space> on` opens a shared Space so every org member can **view and comment**
 but change nothing — writes fail with 403 `space_read_only`, and `pull`/`remix`/`env pull` need a
 **publisher seat** at that level. A Personal Space is owner-only, never visible to admins or
 operators. Full verbs + rules: `references/org-admin.md`.
 
-**Behavior change (previous release): `env`/`mock`'s default scope inside a linked folder is now the
-LINKED PROJECT, not the org.** Running `artor env set` / `artor mock set` (etc.) from a linked
-directory with no scope flag now targets that one prototype, not every prototype in the org. Pass
-`--org` to reach the old org-wide target, or `--version <ref>` to narrow to one immutable version.
-Outside a linked directory, a mutating verb (`set`/`rm`/`pin`) with no `--org` is a loud error —
-there is no silent org-wide fallback. `artor env pull` inside a linked folder now returns the
-**project + org merged** effective set (previously org-only); pass `--org` to restore the old
-org-only pull.
+**New this release: `--scope org|project|version` is the canonical scope selector for `env` and
+`mock`.** `--org` still works as a scope alias but is **deprecated** and prints a one-line stderr
+note - prefer `--scope org`. The rename exists because `--org <ref>` names a **target
+organization** everywhere else in the CLI, while `env`/`mock` always act on the org linked to the
+current folder. Guard rails that come with it: a duplicate/incoherent selector is refused rather
+than silently resolved, `--org` passed where a sub-command has no place for it is a hard error
+explaining both meanings (never a quiet read of another org), and an EMPTY value (`--version=`,
+`--version ""`) fails loud instead of quietly downgrading to project scope. To change organization,
+run `artor org use`.
+
+**Set a secret without putting it in argv: `artor env set KEY --stdin`.** The value is read from
+stdin, so it never lands in shell history or a process listing:
+`printf %s "$SECRET" | artor env set STRIPE_KEY --stdin`. **Prefer this form for any real
+credential.** Exactly one trailing newline is stripped; everything else round-trips byte for byte.
+`KEY=VALUE` together with `--stdin` is refused (one value would be discarded), an empty stdin read
+is an error naming the piped form, and run against a terminal it refuses and prints the pipe form
+(typing a secret there would echo it into scrollback).
+
+**Behavior change (earlier release, still current): `env`/`mock`'s default scope inside a linked
+folder is the LINKED PROJECT, not the org.** Running `artor env set` / `artor mock set` (etc.) from
+a linked directory with no scope flag targets that one prototype, not every prototype in the org.
+Pass `--scope org` to reach the org-wide target, or `--version <ref>` to narrow to one immutable
+version. Outside a linked directory, a mutating verb (`set`/`rm`/`pin`) with no `--scope org` is a
+loud error - there is no silent org-wide fallback. `artor env pull` inside a linked folder returns
+the **project + org merged** effective set; it takes no scope flags.
 
 **Operator** (platform super-admins only — set via `ARTOR_SUPERADMINS`; details: `references/org-admin.md`)
 
@@ -214,6 +314,18 @@ works identically; a deck is just a project whose `kind` is `"slides"` instead o
 
 - **`artor publish` builds on demand** — it rebuilds from clean by default, so you do **not** need
   to run `npm run build` first. Pass `--no-build` to reuse an existing build output.
+- **`--alias <name>` (short `-v`) is the canonical way to name the movable alias.** `--version
+  <name>` still sets the alias but is **deprecated on publish and warns once on stderr** - the same
+  spelling means a version NUMBER everywhere else (`artor open --version 3`) and the CLI's own
+  version at `-V`/`--version`. When both are passed, `--alias` wins and the warning says so. Use
+  `--alias` in anything you write.
+- **`artor publish --json` is the agent-facing form.** It emits exactly one JSON object on stdout:
+  `{ version, url, aliases, artifactType }`, plus `replaced` when the server reports an
+  overwrite. It routes every progress line, warning, smoke-test result, and the build/install
+  subprocess transcript to stderr, so the payload stays parseable. It **never prompts**: the
+  first-publish confirm and the web-sdk offer take their informational path, while a `next.config`
+  patch fails loud asking for `--yes` and a real mock conflict fails loud asking for
+  `--mocks=local|server`. Read `version` and `url` from the object rather than parsing prose.
 - It auto-detects the framework: Next/SSR → **node-server** (static AND dynamic/API routes),
   pure-static frameworks → **static**. Force with `--static` / `--node`; pass `--dir <path>` for a
   non-standard output dir, `--entry <file>` for a node-server's entry. The build uses the project's
@@ -239,7 +351,7 @@ works identically; a deck is just a project whose `kind` is `"slides"` instead o
   exactly what the CLI returns — never invent a version or URL.
 - **Versions are usually immutable, but a small tweak can overwrite one in place.** By default, a
   new `artor publish` mints a fresh, permanent version — to move a shared link's target, point an
-  alias at it (`-v <name>`; `latest` always tracks the newest publish unless you overwrite it
+  alias at it (`--alias <name>`; `latest` always tracks the newest publish unless you overwrite it
   explicitly). For a genuinely small change (a copy fix, a one-line style tweak), it's fine to ask
   the designer whether to overwrite the current alias in place instead of minting a new version —
   see "Small tweaks: overwrite vs. new version" below. Only the project owner or an org admin can
@@ -277,9 +389,13 @@ works identically; a deck is just a project whose `kind` is `"slides"` instead o
 `artor env` and `artor mock` both target one of three scopes via the same flags:
 
 - **No flag, inside a linked project** → the **project** (every version of that one prototype).
-- **`--org`** → the whole org (every node-server deployment, unless overridden).
-- **`--version <ref>`** → exactly one immutable version (`<ref>` is an alias, version number, or
-  content hash — the same grammar as `open`/`comments`/`logs`).
+- **`--scope org`** → the whole org (every node-server deployment, unless overridden). The bare
+  `--org` is a deprecated alias for this and warns on stderr.
+- **`--scope version --version <ref>`** (or just `--version <ref>`, which implies it) → exactly one
+  immutable version (`<ref>` is an alias, version number, or content hash - the same grammar as
+  `open`/`comments`/`logs`).
+- `--scope project` names the default explicitly. Both spellings work (`--scope org` and
+  `--scope=org`), and an empty value is a loud error, never a silent downgrade.
 
 Precedence at read/serve time is **version > project > org** for both, but they differ in *when*
 that resolution happens:
@@ -309,7 +425,7 @@ size of the change from that diff:
   one, so we don't rack up versions for tiny changes? If yes, which link should I update —
   `latest`, or a specific one like `staging`?"_ Default suggestion: `latest`, but always let them
   confirm or override which alias.
-  - Yes → `artor publish -v <chosen-alias> --message "..."` (this alias's existing content is
+  - Yes → `artor publish --alias <chosen-alias> --message "..."` (this alias's existing content is
     replaced in place).
   - No → publish normally (`artor publish --message "..."`, a new version).
 - **A new feature, new page/route, or structural change** ("real"): skip the prompt entirely,
@@ -563,7 +679,7 @@ closed garden, so treat it carefully.
 
 - "publish this as v4 labeled dark-mode" → `artor publish --label dark-mode` (the version number is
   assigned by the server; report what it returns).
-- "share the staging build" → `artor publish -v staging` then `artor open --alias staging`.
+- "share the staging build" → `artor publish --alias staging` then `artor open --alias staging`.
 - "give me a public link" → ask whether guests may comment (see "Share a prototype publicly"),
   then `artor share add --comments <answer>` (default follows latest), or `artor share list` to
   recopy an existing live one.

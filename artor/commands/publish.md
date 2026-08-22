@@ -16,6 +16,10 @@ script + framework dep) before publishing. Ask which app if unknown. (Skill: "Mo
 artor status
 ```
 
+Read the **active org** off that output (or `artor status --json` → `activeOrg` / `role`) rather
+than assuming one - it is what `publish` will ship to, resolved as linked folder org → saved
+default → token home org.
+
 - If this dir isn't linked (`.artor/project.json` missing), run `artor init` first (or
   `/artor:start-here` for the full first-run flow).
 - If not signed in, `artor login`.
@@ -86,14 +90,25 @@ commit fails, report it and stop — don't proceed to step 5.
 ```bash
 artor publish --message "<your summary>"     # alias: artor push
 # — or, if step 3 chose to overwrite —
-artor publish -v <chosen-alias> --message "<your summary>"
+artor publish --alias <chosen-alias> --message "<your summary>"
 rm -rf "$PREV"                                # clean up the temp snapshot
 ```
 
-Useful flags: `--label "<name>"`, `-v <alias>` (move a named alias, e.g. `staging`, or overwrite it
-in place — see step 3), `--no-build` (reuse a build), `--no-install`, `--static` / `--node` /
-`--entry <s>` (artifact type/entry), `--dir <path>` (non-standard output dir), `--no-sdk-update`
-(skip the `@artorapp/web-sdk` review-widget update check — see the skill's "Publishing notes").
+Useful flags: `--label "<name>"`, `--alias <name>` (short `-v`; move a named alias, e.g. `staging`,
+or overwrite it in place - see step 3), `--no-build` (reuse a build), `--no-install`, `--static` /
+`--node` / `--entry <s>` (artifact type/entry), `--dir <path>` (non-standard output dir),
+`--no-sdk-update` (skip the `@artorapp/web-sdk` review-widget update check - see the skill's
+"Publishing notes").
+
+**`--alias`, not `--version`.** `--version <name>` still sets the alias here but is **deprecated
+and warns on stderr** - the same spelling means a version NUMBER on `artor open` and the CLI's own
+version at `-V`. Write `--alias`; if both are passed, `--alias` wins.
+
+**`--json` for a scripted run.** `artor publish --json` prints one object on stdout
+(`{ version, url, aliases, artifactType }`, plus `replaced` on an overwrite) and puts every
+progress line, warning, and build subprocess transcript on stderr. It never prompts: a
+`next.config` patch fails loud asking for `--yes`, a real mock conflict fails loud asking for
+`--mocks=local|server`. Read `version`/`url` from the object rather than parsing prose.
 
 **Boot-test failure.** Before upload, Artor starts the app (`node <entry>`) and waits for it to
 listen. If it crashes, publish stops with the crash output. **Read it and fix the build.** Use

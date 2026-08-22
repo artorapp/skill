@@ -7,6 +7,147 @@ uses pre-1.0 (0.x) semver — new user-visible capability bumps MINOR, fixes/doc
 After a version bump, users pull it with `claude plugin marketplace update artor && claude plugin
 update artor@artor` (update only fires on a version bump).
 
+## [0.20.0] - 2026-08-22
+
+Mirrors the `artor` CLI's UX-consistency batch (CLI 0.24.0 -> 0.25.0), the largest single change to
+the command surface since spaces landed. Almost every command now accepts a **partial ref**, both
+`status` and `whoami` report the **active org** an agent should read instead of guessing, `--json`
+reaches two write commands (`publish`, `init`), `env`/`mock` gain a canonical `--scope` selector and
+a stdin secret path, `publish` renames its alias flag to `--alias`, confirmations get one grammar,
+help answers everywhere, and `artor usage` is a new command. MINOR bump: an agent gains several
+abilities it did not have before, and several forms it used to write are now deprecated.
+
+### Added
+
+- **`artor/SKILL.md`, new "CLI conventions (help, refs, confirms, flags)" section** (between
+  "Monorepos" and "Command reference"), stating once what used to be unstated and is now true
+  everywhere:
+  - **Help works everywhere and never acts.** `-h`/`--help` is honored on every command and
+    anywhere in the arguments, answered before any auth/config/network work, so
+    `artor publish --help` prints usage and **does not publish** (it used to publish). `artor help`
+    and `artor help <command>` are the long forms. A mistyped command prints a did-you-mean, and
+    the suggester deliberately **never** points at `artor rm`.
+  - **Refs accept partial matches**, resolved in one ladder: exact id (case-sensitive), exact
+    slug/name (case-insensitive), unique prefix, unique substring. Applies to org, prototype,
+    folder, space, skill, public link, and comment thread. A ref matching 2+ items is **ambiguous
+    at every tier**, including the exact one: the CLI lists candidates and does nothing, so an
+    ambiguity message is a request for a more specific ref, never something to retry unchanged.
+  - **Public links** (`share set|extend|off`) match on a full id or a **4+ character id prefix**
+    (prefix resolved against the linked project's links; a full id works from anywhere).
+  - **Comment threads** (`comments resolve|reopen|ignore|unignore`) accept the full uuid, the new
+    **8-character short id** printed at the end of each listing row, any unique 4+ character prefix
+    of it, or **`#N`**, the listing row number (quote it). A prefix or `#N` costs one listing read,
+    so the same `--version`/`--open`/`--guests-only`/`--no-guests` flags must be passed.
+  - **Unattended runs must name a destructive target exactly.** `artor rm`, `folder rm`/`clear`,
+    `space rm` (its `--move-to` folder too), `space read`, `space members add|rm`, `skill rm`,
+    `skill pin --yes`, `share off`, and `pull --project <ref> --force` refuse a prefix/substring hit
+    when they cannot ask, and `--org` is held to the same rule on those runs. Called out for what it
+    means here: **an agent IS an unattended run**, so it must pass exact ids/full names for anything
+    destructive and keep partials for reads and reversible writes.
+  - **Confirmations have one grammar**: `-y`/`--yes` anywhere pre-approves; **declining exits `1`**
+    with `✗ Cancelled.` on stderr (so a non-zero exit may mean "the user said no", not "it broke");
+    no terminal and no `-y` is an actionable failure naming the flag, never a silent yes. Prompts
+    draw on stderr, so `--json`/piped stdout stays clean.
+  - **Both flag spellings work everywhere**: `--flag value` and GNU `--flag=value` parse
+    identically for every value-taking flag, and an empty value (`--org ""`, `--org=`, a trailing
+    `--org`) is refused loudly rather than read as absent.
+- **`artor/SKILL.md`, "First check"**: a new "Never guess the org - read it" bullet. Both `status`
+  and `whoami` now report the **active** org (linked folder org -> saved default -> token home org)
+  with the caller's role, and `--json` on either adds `activeOrg`, `role`, `homeOrgMismatch` and
+  `orgsUnavailable`. The bullet tells an agent to read those fields rather than infer an org, and
+  spells out the three states it must not misreport: `homeOrgMismatch: true` is identity differing
+  from target (not a contradiction), `orgsUnavailable: true` means the membership is **unknown**
+  (never "you lost a membership", and never an `artor link` suggestion), and a null `activeOrg`
+  with a readable listing is a stale `.artor` or revoked membership whose recovery step the CLI
+  prints.
+- **`artor/SKILL.md`, "New this release: `artor usage`"** plus a command-reference row and a full
+  **"Plan usage"** section in `references/org-admin.md`: `artor usage [--org <ref>] [--json]`
+  reports plan, storage used (with the age of the reading), publisher seats, and public-link views
+  over 30 days. Owner/admin only, and a non-member gets the same 403 (no membership oracle). The
+  caps are documented as **not interchangeable**: a null storage/views cap is unlimited, a null
+  seat cap means the tier bills **per seat**, and a never-measured storage reading says so rather
+  than reading `0`.
+- **`artor/SKILL.md` intro**: `org list` and `usage` added to the `--json` read-command list, and a
+  new paragraph for the two **write** commands that now emit `--json`. `artor publish --json`
+  prints one object (`version`, `url`, `aliases`, `artifactType`, plus `replaced` on an overwrite)
+  with all progress on stderr; `artor init --json` prints `projectId`, `slug`, `name`, `orgId`,
+  plus `spaceId`/`folderId` when it chose them. Both **never prompt** under `--json`, so a
+  multi-org `init` needs `--org` and a `next.config` patch or mock conflict fails loud asking for
+  `--yes` / `--mocks=local|server`.
+- **`artor/SKILL.md`, "Publishing notes"**: a `--json` bullet (read `version`/`url` off the object,
+  not out of prose) and an `--alias` bullet (below).
+- **`artor/SKILL.md` share table**: a paragraph defining `<share>` as a link id or a unique 4+
+  character prefix, with the rule that `share off` confirms a prefix by naming the resolved id and
+  refuses one unattended.
+- **`artor/SKILL.md`, env/mock**: an `artor env set KEY --stdin` paragraph. The value is read from
+  stdin so it never lands in shell history or a process listing
+  (`printf %s "$SECRET" | artor env set STRIPE_KEY --stdin`), which the skill now names the
+  **preferred form for any real credential**. Exactly one trailing newline is stripped; `KEY=VALUE`
+  with `--stdin` is refused, an empty read errors, and running it against a terminal refuses and
+  prints the pipe form.
+- **`artor/commands/publish.md`**: an active-org line after `artor status`, an `--alias` paragraph,
+  and a `--json` paragraph.
+- **`artor/commands/share.md`**: a `<share>` prefix paragraph in "Manage links".
+- **`artor/commands/address-comments.md`**: a paragraph on the thread-ref forms (full uuid, short
+  id, 4+ prefix, `#N`) and the rule that a prefix or `#N` must be resolved with the same listing
+  flags, with a preference for the full uuid from `--json` when it is already in hand.
+- **`artor/references/org-admin.md`**: `env set KEY --stdin` in the code block plus its own bullet;
+  a "Guard rails" bullet for the scope selector; a "Local shape checks come before the network"
+  bullet for `mock` (name grammar and sha shape validated before any round-trip, so "no such
+  revision" really means the sha is wrong); and a bullet on `space read` / `space members add|rm`
+  confirming interactively with the fully resolved space named, and refusing a partial unattended.
+- **`artor/references/troubleshooting.md`**: eleven new symptom rows - ambiguous partial ref;
+  unattended partial refusal (including the id-instead-of-name fallback when a name cannot be typed
+  back); `✗ Cancelled.` as a decline rather than a failure; the no-terminal confirm refusal; the
+  unknown-command did-you-mean and the pointer to `-h`/`artor help`; `whoami` vs `status` home-org
+  mismatch; `orgsUnavailable` ("couldn't verify"); `artor usage` 403; the `--org` deprecation note;
+  the hard error when `--org` is passed where a sub-command has no place for it; the `publish
+--version` deprecation warning; and the `env set --stdin` terminal refusal.
+
+### Changed
+
+- **`--scope org|project|version` is now the canonical scope selector for `env` and `mock`,
+  everywhere in the skill** (`SKILL.md` command table, the "Env vars and mocks" section, the
+  behavior-change paragraph, `references/org-admin.md` code blocks and bullets, and three
+  `references/troubleshooting.md` rows, and every `env`/`mock` invocation in
+  `commands/org-setup.md`, whose walkthrough is org-wide by definition). That command file also
+  gains the `env set KEY --stdin --scope org` form with a "pipe real credentials, don't type them
+  into argv" note, drops the now-invalid `artor env pull --org` (pull takes no scope flags), and
+  points at `artor status`/`artor whoami` for the **active org** these writes land in rather than
+  asking "right org?". The bare `--org` still works as a scope alias but is
+  **deprecated and warns on stderr**, because `--org <ref>` names a target **organization**
+  everywhere else in the CLI while `env`/`mock` always act on the current folder's org. Also
+  documented: a duplicate/incoherent selector is refused, `--org` where a sub-command has no place
+  for it is a hard error explaining both meanings, an empty value fails loud instead of downgrading
+  to project scope, and `--scope=org` parses like `--scope org`.
+- **`--alias <name>` replaces `-v <name>` as the spelling the skill writes** for publish's movable
+  alias (`SKILL.md` table, "Publishing notes", "Small tweaks", "Interpreting requests";
+  `commands/publish.md`; `commands/address-comments.md`). `-v` remains the documented short form.
+  `--version <name>` still sets the alias but is **deprecated on publish and warns once**, since
+  the same spelling means a version NUMBER on `artor open` and the CLI's own version at `-V`; when
+  both are passed `--alias` wins.
+- **`artor trash` is documented as org-aware.** A new note records that it now resolves the org
+  like `restore`/`rm` (`--org <ref>` -> linked folder -> saved default -> token org) and names the
+  org in its heading, where it previously always fell back to the token's home org and could list a
+  different tenant's trash than the `artor restore` printed beside it. The command row gains
+  `[--org <ref>] [--json]`.
+- **Command-reference rows updated to the real signatures**: `whoami`/`status` take `--json`;
+  `org list` takes `--json` and `org use` takes `<ref>`; `org members` gets its own row;
+  `init` takes `--json` and `--org <ref>`; `rename`/`rm`/`restore`/`trash` take `--org <ref>`;
+  `publish` gains `--alias` and `--json` rows; the comment and share rows use `<thread>`/`<share>`
+  rather than `<threadId>`/`<shareId>`, since neither is required to be a full id any more.
+- **`artor/SKILL.md`, "Spaces"**: the heading is no longer labelled "New this release" (it shipped
+  two releases ago), so the label reads honestly on `usage` and `--scope`, which are new here.
+- **`references/org-admin.md`, mock**: the `pull`/`status`/`revisions` bullet is corrected to
+  `pull`/`status`/`promote` (those are the linked-project-only verbs) with `revisions` described
+  as accepting `--scope org` and nothing else - the previous wording listed `revisions` in both
+  halves of the same sentence.
+- Prose added in this release avoids em-dashes, matching the CLI's own output conventions;
+  pre-existing wording was left untouched rather than reflowed wholesale.
+- No drift guard was added to `scripts/check-release.mjs`: this release introduces no cross-file
+  contradiction to guard, and the deprecated spellings it documents (`--org` as a scope, `--version`
+  as an alias) are still accepted by the CLI, so a repo-wide ban on either string would be wrong.
+
 ## [0.19.0] - 2026-08-08
 
 Mirrors a new `artor` CLI subcommand: `artor share set <shareId> [--comments

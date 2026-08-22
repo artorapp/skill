@@ -66,10 +66,16 @@ artor share add --mode pinned --deployment <id> [--days N] [--comments off|anony
 
 ```bash
 artor share list [--json]             # this project's links (run in the linked dir)
-artor share set <shareId> [--comments off|anonymous|name|name-email]
-artor share extend <shareId> [--days N]
-artor share off <shareId>
+artor share set <share> [--comments off|anonymous|name|name-email]
+artor share extend <share> [--days N]
+artor share off <share>
 ```
+
+- **`<share>` is a link id from `share list`, or a unique 4+ character prefix of one.** A prefix
+  resolves against the **linked** project's links (so run it inside the project); a full id works
+  from anywhere. Anything shorter, or an ambiguous prefix, is refused with the candidates listed,
+  never acted on. Because `off` is irreversible, a **prefix** there is confirmed with the resolved
+  id named, and is **refused on an unattended run**: from an agent-driven run pass the **full id**.
 
 - **`share list` line format** (human output, tab-separated):
   `<shareId>` `<mode>` `<state>` `<views>` `<url or hint>` and, on a **live** link only,

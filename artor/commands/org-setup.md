@@ -7,29 +7,39 @@ Guided setup of org-level knowledge for an **owner/admin**. All of this is scope
 below). Confirm intent **before each write**, and report what was configured. Full flag reference and
 semantics: the artor skill's org-admin reference (auto-loaded as `/artor:artor`).
 
-**`env` and `mock` default to the linked PROJECT's scope, not the org — pass `--org` explicitly**
-for every command below (this walkthrough is org-wide setup, so every `env`/`mock` command needs it).
+**`env` and `mock` default to the linked PROJECT's scope, not the org - pass `--scope org`
+explicitly** for every command below (this walkthrough is org-wide setup, so every `env`/`mock`
+command needs it). `--scope org` is the canonical selector; the bare `--org` still works as a scope
+alias but is deprecated and warns on stderr, because `--org <ref>` names a target organization
+everywhere else in the CLI.
 
-First confirm you're set up: `artor whoami` (right org?) and `artor status` (linked dir). Switch org
-with `artor org use <id|slug>` if needed.
+First confirm you're set up: `artor status` / `artor whoami` name the **active org** (the one these
+writes will land in) with your role - read it there rather than assuming. Change it with
+`artor org use <ref>` if needed.
 
 ## 1. Env vars (admin)
 
 Decide **per variable**: pullable to laptops, or server-only.
 
 ```bash
-artor env set KEY=VALUE --local --org   # local (pullable) — downloadable via `artor env pull --org`
-artor env set KEY=VALUE --org            # server-only — injected into node-server containers, never downloadable
-artor env list --org                     # names + class only (values are write-only)
+artor env set KEY=VALUE --local --scope org  # local (pullable): downloadable via `artor env pull`
+artor env set KEY=VALUE --scope org          # server-only: injected into containers, never downloadable
+artor env set KEY --stdin --scope org        # value read from stdin (preferred for real secrets)
+artor env list --scope org                   # names + class only (values are write-only)
 ```
 
 Ask which class each secret should be before setting it. Prefer **server-only** for anything that
 should never reach a laptop.
 
+**Pipe real credentials, don't type them into argv.** `printf %s "$SECRET" | artor env set
+STRIPE_KEY --stdin --scope org` keeps the value out of shell history and process listings. Exactly
+one trailing newline is stripped. `KEY=VALUE` together with `--stdin` is refused, and run against a
+terminal the command refuses and prints the pipe form rather than echoing the secret.
+
 ## 2. Mock datasets (admin)
 
 ```bash
-artor mock set <name> <file.json> --org    # served at /__mock/<name> as a FALLBACK (org seed)
+artor mock set <name> <file.json> --scope org   # served at /__mock/<name> as a FALLBACK (org seed)
 ```
 
 A deployment that bundles its own `mocks/<name>.json`, or a project mock, wins over the org seed at

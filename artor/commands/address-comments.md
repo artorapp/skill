@@ -58,7 +58,7 @@ logic: the skill's "Small tweaks: overwrite vs. new version" section.
 ```bash
 artor publish --message "<summary of what you fixed>"
 # — or, for a tiny fix the designer wants overwritten —
-artor publish -v <chosen-alias> --message "<summary of what you fixed>"
+artor publish --alias <chosen-alias> --message "<summary of what you fixed>"
 ```
 
 Tell the reviewer the new version number / URL. An overwrite keeps the same `deploymentId`, so
@@ -75,9 +75,17 @@ overwriting if the version might be publicly shared.
 Once a comment is handled, mark its thread resolved (any member may; re-verified server-side):
 
 ```bash
-artor comments resolve <threadId>     # mark handled
-artor comments reopen  <threadId>     # undo, if it needs more work
+artor comments resolve <thread>       # mark handled
+artor comments reopen  <thread>       # undo, if it needs more work
 ```
+
+`<thread>` is the full thread id, the **8-character short id** printed at the end of each listing
+row (or any unique 4+ character prefix of it), or **`#N`**, the row number from the listing (quote
+it in a shell: `"#3"`). A prefix or `#N` costs one listing read, so pass the **same**
+`--version`/`--open`/`--guests-only`/`--no-guests` flags you read with, or the resolution will be
+matched against a different list. An ambiguous prefix lists the candidates and changes nothing;
+an unknown or cross-org thread is a clean 404. The full uuid from `--json` is always unambiguous,
+prefer it when you already have it.
 
 This is the headless twin of the in-page widget's resolve button. Only resolve a thread you've
 **actually** addressed — don't claim work you didn't do.
