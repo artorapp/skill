@@ -7,6 +7,39 @@ uses pre-1.0 (0.x) semver — new user-visible capability bumps MINOR, fixes/doc
 After a version bump, users pull it with `claude plugin marketplace update artor && claude plugin
 update artor@artor` (update only fires on a version bump).
 
+## [0.20.1] - 2026-09-18
+
+Mirrors a server-side permission change in Artor: an **org admin now manages every shared Space
+directly**. No CLI command, flag, or output shape changed, so this is a PATCH bump: the skill's
+description of who may run the existing `artor space` verbs was simply out of date.
+
+### Changed
+
+- **`artor/references/org-admin.md`, Spaces section:**
+  - `artor space rename`, `artor space rm` (both forms), and `artor space members add|rm` are now
+    annotated **"Space admin or org admin"** (previously "Space admin only", or unannotated).
+  - Replaced the rule "an org admin may VIEW any shared Space but not govern its membership
+    without the audited break-glass step" with the current rule: **managing a shared Space needs a
+    Space admin OR an org admin**, each action audited with the actor; a Space admin manages that
+    one Space, an org admin manages every shared Space without being a member of it.
+  - Documented the refusal an agent will actually see: a plain Space member, or a read-only
+    viewer who is not an org admin, gets **403 `space_admin_required`**.
+  - New bullet **"Managing is not writing"**: an org admin who has not joined a shared Space still
+    only views its prototypes, so publish / rename / move / trash / share / folder ops / env vars /
+    mocks there still fail with **403 `space_read_only`**; the remedy is to join first with
+    `artor space members <space> add <their-email>` (itself audited).
+  - The Personal Space bullet now says it is never visible to **or manageable by** anyone else.
+- **`artor/SKILL.md`, `share set` notes:** the remedy for the "this project's space is read-only
+  for you" error no longer mentions org-admin break-glass; it now says to join the space, and
+  that an org admin can add themselves with `artor space members <space> add <their-email>`.
+
+### Notes
+
+- **No minimum CLI version change.** The server only widened who is accepted; an older CLI keeps
+  working and simply succeeds where it used to get a 403.
+- The break-glass API route still exists server-side for compatibility, but nothing in the CLI
+  ever called it, so the skill no longer refers to it.
+
 ## [0.20.0] - 2026-08-22
 
 Mirrors the `artor` CLI's UX-consistency batch (CLI 0.24.0 -> 0.25.0), the largest single change to
