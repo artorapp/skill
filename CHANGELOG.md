@@ -11,9 +11,10 @@ update artor@artor` (update only fires on a version bump).
 
 Mirrors **link passwords** for public share links (artor-cli 0.26.0). A public link can now ask for
 a password before it serves anything: available on every plan, off by default, and set from the CLI
-at mint time or on a live link. MINOR bump: an agent gains an ability it did not have before, and
-the way it must run that ability unattended (pipe the secret, never argv) is new guidance it cannot
-infer from the old surface.
+at mint time or on a live link. Also mirrors the new **`--hide-widget`** flag on `share add`, which
+creates a link with Artor's in-page review widget hidden from signed-in organization members.
+MINOR bump: an agent gains an ability it did not have before, and the way it must run that ability
+unattended (pipe the secret, never argv) is new guidance it cannot infer from the old surface.
 
 ### Added
 
@@ -67,6 +68,17 @@ infer from the old surface.
   value" family, the `--password-stdin`-against-a-terminal refusal, the shape-rule refusals, the
   older-server "created WITHOUT a password" exit-1 case, and an unknown `--password-stdin` flag
   meaning a CLI below 0.26.0.
+- **`artor/SKILL.md`, new `--hide-widget` bullet and command-table row** under "Share a prototype
+  publicly": `artor share add --hide-widget` creates the link with Artor's in-page review widget
+  hidden from signed-in organization members who open it (a valueless boolean flag;
+  `--hide-widget=true` is refused, not silently dropped). Default is shown; it doesn't affect the
+  prototype itself or guest commenting. It matches the dashboard Edit dialog's "Show the review
+  widget" switch, off, and can be changed later from that dialog. Against an older server the CLI
+  prints the exact non-fatal notice ("This server doesn't support hiding the review widget at
+  create time - members will still see it. Change it from the dashboard, or update the server.")
+  and still exits 0.
+- **`artor/commands/share.md`**: a matching `--hide-widget` example in the create code block and a
+  bullet with the same rules and exact strings.
 
 ### Changed
 
