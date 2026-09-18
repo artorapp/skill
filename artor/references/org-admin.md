@@ -155,13 +155,13 @@ never admins, never operators), **shared** (an explicit member list; needs the T
 ```bash
 artor space list                             # the Spaces you can see
 artor space create <name>                    # shared Space (Team+ plan); you become its admin
-artor space rename <space> "<new>"           # Space admin only
+artor space rename <space> "<new>"           # Space admin or org admin
 artor space read <space> on|off              # let the WHOLE org read + comment
-artor space rm <space> [--yes]               # delete an EMPTY shared Space
+artor space rm <space> [--yes]               # delete an EMPTY shared Space (Space admin or org admin)
 artor space rm <space> --move-to <folder> [--yes]   # move its prototypes out first, then delete
 artor space members <space>
-artor space members <space> add <email-or-id> [--role admin|member]
-artor space members <space> rm <email-or-id>
+artor space members <space> add <email-or-id> [--role admin|member]   # Space admin or org admin
+artor space members <space> rm <email-or-id>                          # Space admin or org admin
 ```
 
 - `<space>` resolves by id, exact name, or a **unique partial** (prefix then substring; ambiguity
@@ -181,10 +181,16 @@ artor space members <space> rm <email-or-id>
   see the content). Turning it **off** revokes reach immediately; comments already left stay.
 - **Source is seat-gated at read level.** `artor pull` / `remix` / `env pull` work for a
   read-only viewer only with a **publisher seat**; a reviewer gets 403 `publisher_required`.
-- Flipping `read` needs a **Space admin OR an org admin**; it is always audited.
-- An **org admin** may VIEW any shared Space (oversight) but not write into it or govern its
-  membership without the audited break-glass step. A **Personal** Space is never visible to
-  anyone else, admins and operators included.
+- **Managing a shared Space** (`rename`, `rm`, `members add|rm`, `read`) needs a **Space admin OR
+  an org admin**; every one of those actions is audited with the actor. A Space admin manages that
+  one Space; an org admin manages **every** shared Space without being a member of it. A plain
+  Space member, or a read-only viewer who is not an org admin, gets 403 `space_admin_required`.
+- **Managing is not writing.** An org admin who has not joined a shared Space still only VIEWS its
+  prototypes: publish, rename, move, trash, share, folder ops, env vars and mocks there fail with
+  403 `space_read_only`. The fix is to join it first
+  (`artor space members <space> add <their-email>`), which is itself audited.
+- A **Personal** Space is never visible to or manageable by anyone else, admins and operators
+  included.
 - `artor init` asks which Space first, then the folder. Non-TTY lands in the Organization Space's
   Draft.
 
