@@ -672,7 +672,8 @@ closed garden, so treat it carefully.
   live link (it may have been turned off or expired)", so reshare for a fresh link instead. The
   caller must be the link's **creator or an org admin**, and the project's Space must be writable
   to them (a read-only Space viewer gets a clear "this project's space is read-only for you"
-  error, fixed by joining the space, or by org-admin break-glass). `set` needs the current `artor`
+  error, fixed by joining the space; an org admin can add themselves with
+  `artor space members <space> add <their-email>`). `set` needs the current `artor`
   CLI - if the command comes back unknown, run `artor update` and retry.
 - **A link can ask for a password** (artor-cli **0.26.0+**, every plan, off by default). Set one
   when minting with `artor share add --password-stdin`, and set, change or remove one on a **live**
