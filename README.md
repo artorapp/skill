@@ -56,7 +56,7 @@ explicit slash commands:
 | ------------------------- | ---------------------------------------------------------------------------------- |
 | `/artor:start-here`       | First-run walkthrough — install/check the CLI, sign in, link, publish, share.       |
 | `/artor:publish`          | Build + ship the next version with a generated changelog; return the preview URL.   |
-| `/artor:share`            | Create / list / extend / turn off an anonymous view-only public link.               |
+| `/artor:share`            | Create / list / extend / password-protect / turn off an anonymous public link.      |
 | `/artor:address-comments` | Read reviewer comments → fix → re-publish → resolve the threads.                     |
 | `/artor:remix`            | Fork someone's prototype into a new project you own, then install + ship v1.         |
 | `/artor:pull`             | Fetch a specific version's exact source safely, staying linked.                      |

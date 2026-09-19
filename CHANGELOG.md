@@ -7,6 +7,94 @@ uses pre-1.0 (0.x) semver — new user-visible capability bumps MINOR, fixes/doc
 After a version bump, users pull it with `claude plugin marketplace update artor && claude plugin
 update artor@artor` (update only fires on a version bump).
 
+## [0.21.0] - 2026-09-18
+
+Mirrors **link passwords** for public share links (artor-cli 0.26.0). A public link can now ask for
+a password before it serves anything: available on every plan, off by default, and set from the CLI
+at mint time or on a live link. Also mirrors the new **`--hide-widget`** flag on `share add`, which
+creates a link with Artor's in-page review widget hidden from signed-in organization members.
+MINOR bump: an agent gains an ability it did not have before, and the way it must run that ability
+unattended (pipe the secret, never argv) is new guidance it cannot infer from the old surface.
+
+### Added
+
+- **`artor/SKILL.md`, new "Link passwords" subsection** under "Share a prototype publicly", the
+  full agent-facing contract for the feature:
+  - Available on **every plan**, off by default, and a link with no password behaves exactly as it
+    always has. Needs artor-cli **0.26.0+**.
+  - **A password is never a flag value.** `--password` prompts on a terminal (hidden, typed twice)
+    and takes **no** value - `--password=hunter2`, `--password hunter2` and `--password -hunter2`
+    are all refused rather than silently minting an unprotected link, so the secret can never land
+    in shell history or `ps`. On `share set` the password flags go **after** the share id.
+  - **The agent path is `--password-stdin`**, with the exact pipe form
+    (`printf '%s' "$PW" | artor share add --password-stdin`). It takes no value either, reads
+    stdin, strips exactly one trailing newline, and refuses a terminal, a non-UTF-8 read, or an
+    over-long one.
+  - **Handling rules for the secret itself**: ask the user for the password; if asked to generate
+    one, generate a strong value, show it **once**, and state plainly that it cannot be recovered
+    later (Artor stores only a hash and re-displays it nowhere). Never repeat it back beyond what
+    the user already wrote, never put it in argv, never write it to a file in the project.
+  - **Shape rules**: 8 to 128 characters, no control characters, never trimmed (a space counts),
+    with the CLI's plain refusal line (`Password must be at least 8 characters.`) and the fact
+    that nothing is sent on a refusal.
+  - **The organization requirement**: an unattended `share add` with no password is refused with
+    403 `share_password_required` and the exact message naming both flags; the documented recovery
+    is to get a password from the user and retry with `--password-stdin`. An interactive terminal
+    is asked in place instead. `--remove-password` is refused while the requirement is on.
+  - **Success lines to relay**, verbatim: `Password: on. Share it separately from the link; it
+    can't be shown again.` on `add`, and `password saved` / `password removed` on `set` (prefixed
+    `Link <id>: ` when a prefix was passed).
+  - **Older-server degradation**: the CLI says the password was **not** applied and exits 1. On
+    `add` the link exists WITHOUT a password, so the skill tells the agent not to hand the URL out
+    and to run the `artor share off <id>` the message names; on `set`, a `--comments` change sent
+    in the same call is reported separately because that half did land.
+  - **Visitor side**: the same URL shows a password page, an unlock lasts the browser session up
+    to 24h, changing or removing the password re-locks every browser that had unlocked it, and org
+    members who can already see the prototype's Space are never asked.
+- **`artor/SKILL.md`, share command table**: three new rows - protect a NEW link
+  (`printf %s "$PW" | artor share add --password-stdin`), set/change a LIVE link's password
+  (`artor share set <share> --password-stdin`), and remove one (`--remove-password`).
+- **`artor/SKILL.md`, "Share a prototype publicly"**: a new bullet announcing link passwords next
+  to the existing mode/duration bullets, and a new `share list` bullet for the password suffixes
+  (below).
+- **`artor/SKILL.md`, "Interpreting requests"**: "put a password on that link" / "make the link
+  private" → the `--password-stdin` pipe (ask for the password, or generate and show once), and
+  "take the password off" → `artor share set <shareId> --remove-password`.
+- **`artor/commands/share.md`**: a matching **"Link passwords"** section (same rules, same exact
+  strings), the password pipe added to both the create and the manage code blocks, and a
+  `--remove-password` line.
+- **`artor/references/troubleshooting.md`**: seven new symptom rows - the org-requirement refusal
+  on `add`, the refusal of `--remove-password` while the requirement is on, the "this flag takes no
+  value" family, the `--password-stdin`-against-a-terminal refusal, the shape-rule refusals, the
+  older-server "created WITHOUT a password" exit-1 case, and an unknown `--password-stdin` flag
+  meaning a CLI below 0.26.0.
+- **`artor/SKILL.md`, new `--hide-widget` bullet and command-table row** under "Share a prototype
+  publicly": `artor share add --hide-widget` creates the link with Artor's in-page review widget
+  hidden from signed-in organization members who open it (a valueless boolean flag;
+  `--hide-widget=true` is refused, not silently dropped). Default is shown; it doesn't affect the
+  prototype itself or guest commenting. It matches the dashboard Edit dialog's "Show the review
+  widget" switch, off, and can be changed later from that dialog. Against an older server the CLI
+  prints the exact non-fatal notice ("This server doesn't support hiding the review widget at
+  create time - members will still see it. Change it from the dashboard, or update the server.")
+  and still exits 0.
+- **`artor/commands/share.md`**: a matching `--hide-widget` example in the create code block and a
+  bullet with the same rules and exact strings.
+
+### Changed
+
+- **`artor/SKILL.md` + `artor/commands/share.md`, `share list` line format**: a **live** line can
+  now append `password` (the link asks for one) or `needs a password` (the organization requires a
+  password and this link has none, so it currently opens for nobody), after the `guests:` suffix.
+  Neither appears on a dead link, where the state is inert. The `--json` fields are
+  `passwordProtected` and `blockedByPolicy`; an older server omits both.
+- **`artor/commands/share.md`, the `set` bullet**: `set` is now described as changing a live link's
+  guest-commenting mode, its **password**, or **both in one call**, and the "unattended runs must
+  pass `--comments`" rule is restated accurately - it is a `set` carrying **no flag at all** that
+  fails loud, since a password-only `set` is a complete command and never opens the comments
+  picker.
+- **`README.md`**: the `/artor:share` row now reads "Create / list / extend / password-protect /
+  turn off an anonymous public link".
+
 ## [0.20.1] - 2026-09-18
 
 Mirrors a server-side permission change in Artor: an **org admin now manages every shared Space

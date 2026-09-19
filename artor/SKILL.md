@@ -182,6 +182,10 @@ Four rules hold across the whole CLI, so they are stated once here rather than r
 | Share a link that follows newest        | `artor share add [--mode latest] [--days N] [--warn]`        |
 | Set guest commenting when minting        | `artor share add --comments off\|anonymous\|name\|name-email` |
 | Change a live link's guest commenting    | `artor share set <share> [--comments off\|anonymous\|name\|name-email]` |
+| Create a link with the review widget hidden | `artor share add --hide-widget`                            |
+| Protect a NEW link with a password       | `printf %s "$PW" \| artor share add --password-stdin`        |
+| Set / change a LIVE link's password      | `printf %s "$PW" \| artor share set <share> --password-stdin` |
+| Remove a live link's password            | `artor share set <share> --remove-password`                  |
 | List + recopy this project's live links | `artor share list [--json]`                                  |
 | Extend a live link                      | `artor share extend <share> [--days N]`                      |
 | Turn a link off (dead, not "revoke")    | `artor share off <share>`                                    |
@@ -651,6 +655,12 @@ closed garden, so treat it carefully.
   `guests: off`; the suffix is absent on a dead (turned-off/expired) link and on an older server
   that doesn't send the field. Use `share list --json` to parse it (`guestCommenting`, raw enum
   `name_email`).
+- **`share list` also marks password state on live links.** After the guests suffix, a live line
+  appends `password` when the link asks for one, or `needs a password` when the organization
+  requires a password and this link has none (that link currently opens for nobody until a
+  password is added). Neither suffix appears on a dead link, where the state is inert. In
+  `--json` the fields are `passwordProtected` (boolean) and `blockedByPolicy` (boolean); an older
+  server omits both.
 - **Change a live link's guest commenting** with
   `artor share set <shareId> --comments off|anonymous|name|name-email`. It edits an existing link
   in place: same URL, same expiry, only the guest-commenting mode changes, and the CLI prints the
@@ -665,6 +675,20 @@ closed garden, so treat it carefully.
   error, fixed by joining the space; an org admin can add themselves with
   `artor space members <space> add <their-email>`). `set` needs the current `artor`
   CLI - if the command comes back unknown, run `artor update` and retry.
+- **A link can ask for a password** (artor-cli **0.26.0+**, every plan, off by default). Set one
+  when minting with `artor share add --password-stdin`, and set, change or remove one on a **live**
+  link with `artor share set <share> --password-stdin` / `--remove-password`. See "Link passwords"
+  below for how to run it unattended.
+- **Hide the review widget from signed-in members** with `artor share add --hide-widget` (a
+  valueless boolean flag; `--hide-widget=true` is refused, not silently dropped). Use it when a
+  user asks for a clean demo link with no review widget for their teammates - the link still
+  works normally for any visitor, this only hides Artor's own in-page comment widget for
+  organization members who open it. Default is shown. It matches the dashboard Edit dialog's
+  "Show the review widget" switch, off, and can also be changed later from that dialog. Against
+  an older server that ignores the field, `share add` prints "This server doesn't support hiding
+  the review widget at create time - members will still see it. Change it from the dashboard, or
+  update the server." and still exits 0 - the link was created as requested, this control just
+  didn't apply; relay that honestly.
 - **`--mode pinned`** ties the link to **one fixed version** (pass `--deployment <id>`) — its bytes
   never change. **`--mode latest`** (the default) follows the newest publish.
 - **Duration** is `--days N` (default 7); the server clamps it to the org cap and platform ceiling
@@ -675,6 +699,56 @@ closed garden, so treat it carefully.
   org access**, and server-only secrets never load for a public visitor. The prototype's own forms,
   API routes, and server actions work normally for any visitor holding the link (see the note
   above); guest commenting is a separate opt-in for Artor's own comment widget only.
+
+### Link passwords
+
+A public link can ask for a **password** before it serves anything. It is available on **every
+plan**, it is off by default, and it changes nothing about a link that has none. Needs artor-cli
+**0.26.0+** (an older CLI rejects the flags as unknown - run `artor update`).
+
+- **A password is never a flag value.** `--password` prompts for it on a terminal (hidden, typed
+  twice) and **never takes a value**: `--password=hunter2`, `--password hunter2`, and
+  `--password -hunter2` are all refused, so it can't land in shell history or `ps`. On `share set`
+  the flags go **after** the share id.
+- **As an agent you are an unattended run, so use `--password-stdin`** and pipe the value:
+
+  ```bash
+  printf '%s' "$PW" | artor share add --password-stdin
+  printf '%s' "$PW" | artor share set <share> --password-stdin
+  ```
+
+  `--password-stdin` takes no value either; it reads stdin, strips exactly one trailing newline,
+  and refuses a terminal ("--password-stdin expects the password on stdin (nothing is piped). Use
+  --password to be prompted instead."), a non-UTF-8 read, or an over-long one.
+- **Get the password from the user, or generate one and show it ONCE.** Ask them for the password
+  they want. If they ask you to generate one, generate a strong random value, show it to them a
+  single time, and tell them plainly that it **cannot be recovered later** - Artor stores only a
+  hash and re-displays it nowhere, so losing it means setting a new one. Never echo a password the
+  user gave you back into the conversation beyond what they already wrote, never put it in argv,
+  and never write it to a file in the project (it would be committed, or stripped at publish).
+- **Rules:** 8 to 128 characters, no control characters, never trimmed (a space counts). A
+  rejection is printed as a plain line, e.g. `Password must be at least 8 characters.`, and
+  nothing is sent.
+- **If the organization requires passwords**, an unattended `share add` with no password is
+  refused (HTTP 403, error code `share_password_required`) with: "This organization requires a
+  password on public links. Re-run with --password (or --password-stdin in scripts)." Ask the user
+  for a password and retry with `--password-stdin`. On an interactive terminal the CLI asks for it
+  in place and creates the link without a re-run. While the requirement is on, `--remove-password`
+  is refused too: "This organization requires a password on public links, so it can't be removed."
+- **Success lines to relay.** `share add` prints "Password: on. Share it separately from the link;
+  it can't be shown again." - so hand over the URL and the password through different channels.
+  `share set` prints `password saved` or `password removed` (prefixed `Link <id>: ` when you
+  passed a prefix rather than a full id).
+- **Against an older server the CLI says the password was NOT applied, and exits 1.** On `add` the
+  link was created **without** a password: "This server doesn't support link passwords yet - the
+  link was created WITHOUT a password. Run `artor share off <id>` to turn it off, or update the
+  server." Do not hand that URL out; turn it off and report the server limitation. On `set` it says
+  the password was not set (or not removed), and a `--comments` change sent in the same call is
+  reported separately, because that half **did** land.
+- **What the visitor sees.** The same URL shows a password page; entering the right password
+  unlocks the link for that browser session, up to 24h. Changing or removing the password re-locks
+  every browser that had unlocked it. Org members who can already see the prototype's Space are
+  never asked.
 
 ## Interpreting requests
 
@@ -687,6 +761,10 @@ closed garden, so treat it carefully.
 - "stop guests commenting on that link" / "let people comment on it" → `artor share set <shareId>
   --comments off|anonymous|name|name-email` (get the id from `artor share list`; the link, its URL
   and its expiry all stay as they are).
+- "put a password on that link" / "make the link private" → ask for the password (or generate one
+  and show it once), then `printf '%s' "$PW" | artor share set <shareId> --password-stdin`; at mint
+  time, the same pipe into `artor share add`. "Take the password off" →
+  `artor share set <shareId> --remove-password`.
 - "get me the link" → `artor open --json` (reads the URL without opening a browser), or read the
   URL from the last `publish` output.
 - "remix / fork this" → `artor remix <project>` (new project you own), not `pull`.
