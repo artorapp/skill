@@ -16,7 +16,9 @@ Both `env` and `mock` (below) share the same three-level scope model and flag gr
   a project or version row). **This is the canonical spelling.** The bare **`--org` is a deprecated
   alias** here: it still works and prints a one-line stderr note, but `--org <ref>` names a target
   **organization** everywhere else in the CLI, while `env`/`mock` always act on the org linked to
-  the current folder. To change organization, run `artor org use`.
+  the current folder. `env`/`mock` act on the linked folder's org; to use another org, run from a
+  folder linked to it (or re-link with `artor unlink --link-only` + `artor link <project> --org
+  <slug>`).
 - **`--version <ref>`** → exactly one immutable version's scope (`<ref>` = alias, version number,
   or content hash); it implies `--scope version`. **`--scope project`** names the default
   explicitly.
@@ -242,7 +244,8 @@ artor usage [--org <ref>] [--json]
   (MB), or `null` when an older server does not send it: treat `null` as unknown, never as zero.
   `storage.measuredAt` is an ISO timestamp or `null`.
 - Org resolution: `--org <ref>` wins (a present-but-empty value is refused, never read as absent),
-  else the **linked folder's** org, else the saved default / token org. `--json` names the org too.
+  else the **linked folder's** org, else (unlinked) one account that belongs to exactly one org, else a picker
+  on a terminal / a refusal asking for `--org` unattended. `--json` names the org too.
 - **Read each cap honestly, they are not interchangeable:** a `null` storage or views cap means
   **unlimited**; a `null` seat cap means the tier bills **per seat**, NOT unlimited; and a
   never-measured storage reading says so rather than showing `0`. Don't collapse those into
