@@ -105,7 +105,12 @@ Four rules hold across the whole CLI, so they are stated once here rather than r
   by the same parser for every value-taking flag, so `artor pull --project=old-demo --org=acme` is
   exactly the spaced form. An **empty** value (`--org ""`, `--org=`, or a trailing `--org` with
   nothing after it) is refused loudly, never read as absent - so an unset shell variable can't
-  silently retarget another org.
+  silently retarget another org. Since artor-cli **0.27.0**, **any** value flag followed by another
+  `--flag` or by nothing fails before acting (exit 1), for most flags with `--x needs a value.`
+  (`--org`, `--comments`, `space rm --move-to`, `env`/`mock` `--scope`/`--version` and
+  `-m`/`--message` keep their own message), where older CLIs sometimes ran with a default (the org
+  space for `--space`, latest for `--ref`, 7 days for `--days`). A free-text value that really
+  starts with `--` takes the `=` form: `--message=--hotfix`, `--desc=--beta`.
 
 ## Command reference
 
@@ -169,6 +174,7 @@ Four rules hold across the whole CLI, so they are stated once here rather than r
 | Resolve local-vs-server mock drift (see notes) | `artor publish --mocks=local\|server`                    |
 | Open the latest / a specific version        | `artor open` / `artor open --version 3` / `--alias <name>` |
 | Get the preview URL without a browser       | `artor open --json` (prints `{ "url": … }`, no launch)     |
+| Load a members-only preview in a browser you drive | `artor open --signed-in --json` (single-use `authUrl`, 60s; see notes) |
 | Read review comments on a version           | `artor comments [--version <ref>] [--open] [--guests-only\|--no-guests] [--json]` |
 | Resolve / reopen a comment thread           | `artor comments resolve <thread>` / `reopen <thread>`      |
 | Exclude / re-include a thread from AI passes | `artor comments ignore <thread>` / `unignore <thread>`    |
@@ -368,6 +374,22 @@ works identically; a deck is just a project whose `kind` is `"slides"` instead o
   falls back to `(open it manually: <url>)` — so it is safe in headless/CI environments. Prefer
   `artor open --json` to get `{ "url": … }` with no browser launch at all. With no live version,
   plain `open` prints "No live versions to open yet. Run `artor publish` first." (info, exit 0).
+- **Opening a members-only preview in your own browser.** The preview URL is members-only, so a
+  browser you control (headless Playwright, a fresh profile, for debugging or screenshots) with no
+  dashboard session lands on a sign-in wall. Use `artor open --signed-in --json` (artor-cli
+  **0.27.0+**, add `--version <n>` / `--alias <name>` to pick the version). It prints
+  `{ "url", "authUrl", "expiresAt" }`: `authUrl` is a **single-use** signed-in link, valid **60
+  seconds**, for that one version's preview host; opening it gives that browser **one hour** of
+  member access to that version only. Rules:
+  - Access ends after **one hour**, or at once if the CLI token is revoked in Settings → CLI
+    tokens. `artor logout` only forgets the token locally and does **not** revoke it.
+  - Navigate to `authUrl` **promptly (within 60s) and exactly once**; mint a fresh one if it
+    expired or was used.
+  - **Never paste `authUrl` into chat, a PR, an issue, a log, or anything that unfurls links** -
+    an unfurler opens it first and uses it up. Keep it inside the command that opens the browser.
+  - To give a person a link, use plain `artor open --json` (`url`), which never mints a credential.
+  - An older server answers "This server does not support --signed-in yet, or the prototype is not
+    visible to you." - fall back to asking the user to open `url` in their own signed-in browser.
 - Secrets are never uploaded: `.env*`, `.envrc`, `.npmrc`, `.yarnrc*`, `.netrc`, `credentials*`,
   `kubeconfig`, `*.pem`, `*.key`, `id_rsa*`, and similar secret files are force-excluded regardless
   of `.gitignore` (as are `node_modules`, `.git`, `.next`, `.artor`, …).
@@ -767,6 +789,8 @@ plan**, it is off by default, and it changes nothing about a link that has none.
   `artor share set <shareId> --remove-password`.
 - "get me the link" → `artor open --json` (reads the URL without opening a browser), or read the
   URL from the last `publish` output.
+- "screenshot / debug the preview in a browser" (yours, not signed in) → `artor open --signed-in
+  --json`, then open its `authUrl` once within 60s; never report `authUrl` back, report `url`.
 - "remix / fork this" → `artor remix <project>` (new project you own), not `pull`.
 
 Report the exact version number and URL the CLI returns; do not invent them.
