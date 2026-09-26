@@ -246,7 +246,9 @@ there are no bars and the result carries a `usage` object (`null` against an old
 metric's per-seat increment is `perSeat`). `artor usage` (owner/admin) shows the same bars plus
 the org's static and live app build limits. A build over its limit (static or live app) gets a
 413 naming the limit and the step: upgrade the plan, or contact support. Extra seats never raise
-a build limit. Point the user to that step and to https://artor.app/pricing.md.
+a build limit. Relay the step the refusal names: only when it offers an upgrade, also point the
+user to https://artor.app/pricing.md; when it says contact support, relay the support step and
+do not bring up plans (a custom limit or paused upgrades can rule an upgrade out on any plan).
 
 **Spaces - the access wall.** `artor space` manages who in the org can reach a
 set of prototypes (**Org → Space → Folder → Prototype**); folders are cosmetic *within* a Space.

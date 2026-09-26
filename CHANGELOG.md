@@ -34,12 +34,16 @@ Mirrors **static build size by plan**, the **usage bars** and the **pricing page
     (`null` against an older server; the per-seat increment is `perSeat`).
 - **`publish --json` shape** documented with `usage` in SKILL.md and `commands/publish.md`.
 - **Build over its limit (static or live app):** the 413 names the limit and the step (upgrade
-  the plan, or contact support; extra seats never raise a build limit); the agent points the
-  user there and to the pricing page.
+  the plan, or contact support; extra seats never raise a build limit). The agent relays that
+  step, and points to https://artor.app/pricing.md only when the step offers an upgrade; a
+  support step is relayed as is, with no plan pitch (a custom limit or paused upgrades can rule an
+  upgrade out on any plan).
 - **Source warning now at 75% of the 50 MB cap** (about 37.5 MB) instead of 25 MB, with the
   percent in the line.
 - **`artor usage`** gains bars on storage and views, a `builds:` row with the org's static and
   live app build limits, and an optional `limits: { staticBundleMb, nodeBundleMb }` in `--json`.
+  `references/org-admin.md` labels its `builds:` values as an example: the real limits come from
+  the server for each org (plan and any custom limit).
 
 
 Mirrors the **source snapshot ignore rules** and the **50 MB source cap** (artor-cli 0.27.0).
