@@ -117,16 +117,48 @@ global "active account" - **the account follows the folder**, exactly like the o
   project, it doesn't move the existing one), and instead says to run `init` from a folder outside
   the linked one, unlink first, or drop `--org`. `--org` that merely repeats the folder's own org is
   never a conflict, even when it also narrows which account can act.
+- **`artor init`/`artor link` also refuse a race, even with no `--org` at all.** If the org either
+  command resolved (from `--org`, a picker, or the unlinked single-org shortcut) drops off the live
+  org list between the check and the write, both refuse with `Your org list changed: --org
+  "<ref>" no longer names the org this command checked. Nothing was changed. Run \`artor account
+  list\` to refresh your orgs, then run it again.` when `--org` was given, or `Your org list
+  changed: the org this command checked is no longer one of your orgs. Nothing was changed. Run
+  \`artor account list\` to refresh your orgs, then run it again.` with no `--org`. Either way,
+  nothing was created or re-linked - it's safe to retry: run `artor account list` to refresh,
+  confirm the org with the user, then re-run the original command.
 - **Confirm who/where a command actually acted - don't assume.** Every command that resolves an
   account or org prints a `-> org · email · space / folder / project` line to **stderr** before it
   acts (not `login`/`logout`/`account list`/`dev`, none of which resolve one), never stdout, so it
   never pollutes `--json`; read it, or read the `account`/`target` field on a `--json` object
   payload (`status`, `whoami`, `init`, `publish`, ...). **List `--json` payloads stay bare arrays
   and never carry a `target`.** Never infer the acting account from which one you logged in most
-  recently. `status --json` also carries `accountAmbiguous`, `accountMismatch`, `orgNotFound`, and
-  `orgChoiceRequired` - each `true` means resolution stopped short of a `target` (an ambiguous
-  `--account`/`--org`, a mismatch, an unresolvable ref, or an unlinked folder with a choice still
-  to make); read those booleans instead of treating a missing `target` as a crash.
+  recently. `status --json` also carries `accountAmbiguous`, `accountMismatch`, `orgsStale`, and
+  `orgNotFound`, and `orgChoiceRequired` - each `true` means resolution stopped short of a `target`
+  (an ambiguous `--account`/`--org`, a confirmed mismatch, an org list that couldn't be refreshed
+  to check, an unresolvable ref, or an unlinked folder with a choice still to make); read those
+  booleans instead of treating a missing `target` as a crash.
+- **`status`'s `orgsStale`: "can't tell yet", not "not a member".** Before reporting a mismatch,
+  `status` refreshes the relevant account's org list once (identity-only, no org header) when the
+  cached list is the ONLY reason nothing matched. If every account refreshes cleanly and the
+  refusal still holds, that's a confirmed `accountMismatch`. If any refresh itself fails (offline,
+  a dead token, a busy lock), `status` reports `orgsStale: true` instead, with the message
+  `Couldn't check which of your accounts is in this folder's org: the saved org list may be out of
+  date, and refreshing it failed. Run \`artor account list\` to check your accounts.` (or, with
+  `--org <ref>`, "in an org matching \"<ref>\"" in place of "in this folder's org"). Never tell the
+  user they aren't a member when `orgsStale` is true - re-run the command (or `artor account list`)
+  once conditions improve, or tell the user the check failed and to retry; treat it exactly like
+  `orgsUnavailable`, not like `accountMismatch`. `status --account` on the fully legacy path (no
+  identified accounts at all, only a not-yet-identified or config.json token) is always refused,
+  never silently accepted: with a parked login, `This machine's login hasn't been identified yet,
+  so --account can't match it. Run \`artor account list\` (it identifies it), then retry.`; with no
+  login at all, `No logged-in account "<value>". Run \`artor login\`.`.
+- **`whoami` and `status` send the resolved org** on their identity call (`X-Artor-Org`), so a
+  server-side membership loss surfaces as the same actionable refusal either command already uses
+  elsewhere: `Not a member of org "<orgId>" (or it no longer exists). Run "artor org list" to see
+  your orgs. To move this folder to another org, run "artor unlink --link-only" then "artor link
+  <project> --org <slug>". Outside a linked folder, pass "--org <slug>".` Relay it as written -
+  the three remedies cover every case (list orgs, re-point a linked folder, or pass `--org` in an
+  unlinked one).
 - **`artor account list [--json]`** is the accounts inventory: every login stored for the current
   server, each token **re-verified live**, plus which one `thisFolder` marks (the one this
   directory's commands would use). Each row's `orgs` is that account's cached memberships. Read
@@ -144,6 +176,16 @@ global "active account" - **the account follows the folder**, exactly like the o
     the token, just "couldn't check right now."
   - `error` - the check itself failed for another reason (`httpStatus` in `--json`); also not a
     verdict on the token.
+  A **pending** row (`{ kind: "pending", apiUrl, reason?, httpStatus? }`) is a login this machine
+  hasn't identified yet (an older CLI's token, or one just approved) - never printed with a token.
+  `reason` is one of `unreachable`, `suspended`, `deletion_pending`, or `error` (with `httpStatus`),
+  and is absent when it simply wasn't checked this run. Human output groups pending logins by
+  reason with what to do for each: unreachable says it will identify itself automatically once the
+  server answers and to re-run `artor account list` then; `suspended`/`deletion_pending` print the
+  same account-state sentence as an identified account's row (contact an admin/support, or sign in
+  with a password and choose Cancel deletion & sign in); `error` says to re-run `artor account
+  list` later; with no reason it just says the count is not identified yet. Never tell the user a
+  pending login is broken - most reasons mean "try again," not "fix something."
 - **`artor logout [--account <email>] [--all]`** revokes the token **on the server** before
   forgetting it locally (this also ends any `artor open --signed-in` access minted from it). One
   stored account needs no flag; several need `--account <email>` or `--all` (or an interactive

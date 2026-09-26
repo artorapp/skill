@@ -147,6 +147,40 @@ account-resolution error messages below; an older CLI still only supports one st
     resolution picked drops off the live list before the write), the elsewhere-writer's `--org`
     conflict wording (`remix`, `pull --dir`), `artor logout --account`'s own not-found message, the
     shared-email `--account` ambiguity, and the does-not-take-`--account` refusal.
+- **Synced against the CLI's last fix pass (a `status`/`account list`/`whoami`/`init`/`link`
+  round), verified message-for-message against `cli/src` at HEAD 353d6146:**
+  - **`status --json` gains `orgsStale`.** Before reporting a mismatch, `status` refreshes the
+    relevant account's org list once (identity-only, no org header) when a stale cache is the ONLY
+    reason nothing matched. A refresh that succeeds and still doesn't match is a confirmed
+    `accountMismatch`; a refresh that itself fails (offline, a dead token, a busy lock) is
+    `orgsStale: true` instead, with its own message
+    (`Couldn't check which of your accounts is in this folder's org: the saved org list may be
+    out of date, and refreshing it failed. Run \`artor account list\` to check your accounts.`,
+    or "in an org matching \"<ref>\"" with `--org`). Documented in `SKILL.md`: never report "not a
+    member" when it's actually "couldn't check" - re-run instead.
+  - **`status --account` on the fully legacy path (no identified accounts, only a parked or
+    config.json token) is always refused**, reusing `requireAuth`'s own text: `This machine's
+    login hasn't been identified yet, so --account can't match it. Run \`artor account list\` (it
+    identifies it), then retry.`, or with no login at all, `No logged-in account "<value>". Run
+    \`artor login\`.`.
+  - **The `init`/`link` "Your org list changed" refusal now also fires with no `--org` at all**
+    (the org a picker or the unlinked single-org shortcut resolved dropped off the live list
+    before the write): `Your org list changed: the org this command checked is no longer one of
+    your orgs. Nothing was changed. Run \`artor account list\` to refresh your orgs, then run it
+    again.` Split the troubleshooting row into the `--org` and no-`--org` forms with their exact
+    text (the earlier entry above had speculated the wording; this confirms and corrects it).
+  - **`artor account list`'s pending (not-yet-identified) rows now say WHY**, not just "not
+    identified yet": `--json` pending rows gain an optional `reason`
+    (`unreachable`/`suspended`/`deletion_pending`/`error`, the last with `httpStatus`), and human
+    output groups by reason with what to do for each - documented in both `SKILL.md` and new
+    troubleshooting rows. Never treat a pending login as broken; most reasons mean "it'll resolve
+    itself" or "retry later," not "fix something."
+  - **`whoami`/`status` now send the resolved org on their identity call**, so a membership loss
+    the server catches mid-request surfaces the same actionable message every other org-rejected
+    path already used: `Not a member of org "<orgId>" (or it no longer exists). Run "artor org
+    list" to see your orgs. To move this folder to another org, run "artor unlink --link-only"
+    then "artor link <project> --org <slug>". Outside a linked folder, pass "--org <slug>".`
+    Documented as its own `SKILL.md` bullet and troubleshooting row.
 
 ## [0.23.2] - 2026-09-26
 
