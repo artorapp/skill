@@ -220,6 +220,29 @@ non-member get the same 403. Read the caps honestly: a `null` storage/views cap 
 but a `null` seat cap means the tier bills **per seat**, and a never-measured storage reading says
 so rather than showing `0`. Details: `references/org-admin.md`.
 
+**Prices and plan limits: read https://artor.app/pricing.md.** For any question about prices,
+what a plan includes, or "will this fit on my plan" (storage, views, prototypes running at once,
+static and live app build size, memory), fetch that page and answer from it. Never quote prices or
+limits from memory or from this file: they change, and that page is kept in step with the website.
+Storage, views and prototypes running at once grow with each extra publisher seat on paid plans;
+build size and memory do not. An org's actual limits can differ (custom limits): `artor usage`
+(owner/admin) shows the real numbers. Only an org owner or admin can upgrade (Settings, Billing);
+anyone else should ask an org admin. Enterprise is by contact, not self-serve.
+
+**Usage block after a publish (artor-cli 0.28.0+).** At the end of a publish the CLI prints fill
+bars: this build against its size limit and the saved source against 50 MB (on an interactive
+terminal, or anywhere once one reaches 75%), plus storage and public-link views (last 30 days)
+only once they reach 75% of the organization's limit, each with ONE `⚠` line naming the next
+step. Owners/admins see exact numbers and "You can upgrade the plan ... in Settings, Billing";
+other publishers see only the percentage and "Ask an org admin to ...". Relay that line to the
+user as written; do not invent a fix, and do not suggest an upgrade the line does not offer. A
+views line is a notice (views never block a publish); storage at 100% stops new publishes.
+Under `--json` there are no bars: warnings go to stderr and the result carries a `usage` object
+(`null` against an older server). `artor usage` (owner/admin) shows the same bars plus the
+org's static and live app build limits. A static build over its limit gets a 413 naming the
+limit and the step (upgrade, add seats, or contact support); point the user to that step and to
+https://artor.app/pricing.md.
+
 **Spaces - the access wall.** `artor space` manages who in the org can reach a
 set of prototypes (**Org → Space → Folder → Prototype**); folders are cosmetic *within* a Space.
 `artor space read <space> on` opens a shared Space so every org member can **view and comment**
@@ -418,8 +441,10 @@ works identically; a deck is just a project whose `kind` is `"slides"` instead o
 - **The snapshot is capped at 50 MB compressed** (Artor is a preview tool, not source control).
   The CLI measures it BEFORE building or uploading anything and stops with the total plus the
   heaviest directories and files when it is over (it also stops past 200 MB unpacked, past 100,000
-  files, or when it compresses more than 15 times over, the limits `pull` can restore); above
-  25 MB it prints a one-line warning. There is no override flag: fix it with `.gitignore` or `.artorignore`, then check with `artor publish --list-source`,
+  files, or when it compresses more than 15 times over, the limits `pull` can restore); at 75% of
+  the cap (about 37.5 MB, artor-cli 0.28.0+; 25 MB before) it prints a one-line warning with the
+  percent. There is no override flag: fix it with `.gitignore` or `.artorignore`, then check with
+  `artor publish --list-source`,
   which prints every file that would ship (with sizes and totals) and exits without building,
   signing in or uploading; `--list-source --json` gives `{ files: [{ path, size, sha }], rawBytes,
   compressedBytes, count, wouldStop, breaches, empty }` for scripts (`wouldStop` true means a

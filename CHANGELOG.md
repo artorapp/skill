@@ -9,6 +9,33 @@ update artor@artor` (update only fires on a version bump).
 
 ## [0.23.0] - 2026-09-26
 
+Mirrors **static build size by plan**, the **usage bars** and the **pricing page** (artor-cli 0.28.0).
+
+- **Prices and plan limits come from https://artor.app/pricing.md.** New rule: for any question
+  about prices, what a plan includes or "will this fit on my plan", the agent fetches that page
+  and answers from it, never from memory or from this file.
+  - Pooled limits explained: storage, views and prototypes running at once grow with each extra
+    publisher seat on paid plans; build size and memory do not.
+  - Real per-org numbers (custom limits) come from `artor usage` (owner/admin).
+  - Only an org owner or admin upgrades (Settings, Billing); anyone else asks an org admin;
+    Enterprise is by contact.
+- **Usage block after a publish.**
+  - Fill bars for this build (against its plan limit) and the saved source (against 50 MB), on
+    an interactive terminal or anywhere once one reaches 75%.
+  - Storage and public-link views (last 30 days) appear only at 75% of the org's limit, each with
+    one warning line naming the next step.
+  - Admins see exact numbers and the action; other publishers see a percentage and "Ask an org
+    admin to ...". The agent relays the line as written and never invents an upgrade.
+  - Views are a notice (they never block a publish); storage at 100% stops new publishes.
+  - `--json`: no bars, warnings on stderr, a `usage` object in the result (`null` against an
+    older server).
+- **Static build over its limit:** the 413 names the limit and the step (upgrade, add seats, or
+  contact support); the agent points the user there and to the pricing page.
+- **Source warning now at 75% of the 50 MB cap** (about 37.5 MB) instead of 25 MB, with the
+  percent in the line.
+- **`artor usage`** gains bars and the org's static and live app build limits.
+
+
 Mirrors the **source snapshot ignore rules** and the **50 MB source cap** (artor-cli 0.27.0).
 `artor publish` now builds its source snapshot through one ignore engine that honours every
 `.gitignore` in the tree plus a new `.artorignore`, and refuses an oversized snapshot locally with
