@@ -17,9 +17,11 @@ case.
   support.` The agent stops and tells the user to contact their admin or support, and never
   retries `artor login` in a loop (signing in again cannot lift a suspension).
 - **Account scheduled for deletion.** ``This account is scheduled for deletion on {date}. Run
-  `artor login` to restore it.`` The agent tells the user to run `artor login` and choose
-  **Cancel deletion & sign in** in the browser; it cannot cancel the deletion for them. The old
-  CLI token works again once the account is restored.
+  `artor login` and sign in with your password to restore it.`` (or ``This account is pending
+  deletion. ...`` once the date has passed). The agent tells the user to run `artor login`, sign
+  in with their password and choose **Cancel deletion & sign in**; magic-link and social sign-in
+  cannot restore an account. It cannot cancel the deletion for them. The old CLI token works
+  again once the account is restored.
 - **Generic token failure.** ``Token invalid or revoked. Run `artor login`.`` now has its own row
   (revoked, expired, or permanently deleted account).
 
