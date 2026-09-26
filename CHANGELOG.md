@@ -7,6 +7,72 @@ uses pre-1.0 (0.x) semver — new user-visible capability bumps MINOR, fixes/doc
 After a version bump, users pull it with `claude plugin marketplace update artor && claude plugin
 update artor@artor` (update only fires on a version bump).
 
+## [0.23.0] - 2026-09-26
+
+Mirrors the **source snapshot ignore rules** and the **50 MB source cap** (artor-cli 0.27.0).
+`artor publish` now builds its source snapshot through one ignore engine that honours every
+`.gitignore` in the tree plus a new `.artorignore`, and refuses an oversized snapshot locally with
+a directory breakdown before any upload. MINOR bump: an agent gains a new command surface
+(`--list-source`, `.artorignore`) and a new failure mode it must resolve with an ignore rule rather
+than a workaround.
+
+### Added
+
+- **`artor/SKILL.md`, new "What goes into the source snapshot" note** under "Publishing notes":
+  - The snapshot file list is built by ONE engine with no git dependency: `.gitignore` files at
+    every level plus the parent directories up to the repository root (each scoped to its own
+    directory, so a nested app's `ios/`, `android/`, `dist/` or `.expo/` is never uploaded and a
+    monorepo's root rules still apply from a sub-app), then `.artorignore` files (same syntax, add
+    excludes for tracked-but-private files or force-include a gitignored file or directory with
+    `!pattern`), then the hardcoded secret and directory excludes that no ignore file can negate.
+    A hand-written static site served from the project root applies only `.artorignore` to the
+    served bundle, never `.gitignore`.
+  - A project with no git works the same with only `.artorignore`; `.git/info/exclude` and the
+    global git excludes are not read; ignored directories are never walked.
+  - **The snapshot is capped at 50 MB compressed.** The CLI stops BEFORE building or uploading
+    when it is over and prints the total plus the heaviest directories and files; above 25 MB it
+    warns in one line. No override flag: the fix is an ignore rule, verified with the new
+    `artor publish --list-source` (`--json` for scripts), which prints every file that would ship
+    with sizes and totals and exits without building, signing in or uploading. A server 413 names
+    the cap and leads with `artor update`, since a CLI before 0.27.0 reads no ignore file.
+  - Explicit guidance: never stage a slimmed copy of the project to get under the cap; write an
+    ignore rule instead.
+  - `--list-source --json` also reports `wouldStop`, `breaches` and `empty`, so an agent can
+    predict a refusal without hardcoding any limit.
+  - An empty snapshot (a parent repo's `.gitignore` of `*` or `/apps/**`) is a warning, never a
+    stop: the publish ships, the warning names the responsible ignore file, and the agent offers
+    `!` patterns in the project's own `.artorignore` if the user wants the source kept.
+    `--list-source --json` reports `empty: true`.
+  - For a hand-written static site served from its root, `.artorignore` also removes a file from
+    the served site; the skill steers large-asset fixes to `.gitignore` there only when `pull`
+    and remix need not restore them, otherwise to making the file smaller. Ignore files are never
+    served.
+  - New "Slimming a snapshot" playbook: list the source, sort heavy paths into build output
+    (`.gitignore`), tracked-but-unneeded files (`.artorignore`) and files the prototype needs
+    (compress, never ignore), write the narrowest pattern, re-check, and tell the user.
+  - `.artorignore` is read only inside the published folder; symlinks are skipped when they
+    leave the project, point at an excluded or ignored file, or loop; `artor template push` packs
+    with the same rules; the size stop also covers the unpacked-size, file-count and compression
+    ratio limits.
+- **Command reference:** new row for `artor publish --list-source`.
+
+### Changed
+
+- **"Secrets are never uploaded" note** replaced: the old wording said secrets were excluded
+  "regardless of `.gitignore`", which implied `.gitignore` was honoured when it was not. The new
+  note states the real precedence (git rules, then `.artorignore`, then the non-negatable
+  excludes).
+- **"Describe what changed" step 2** now tells the agent to diff the paths
+  `--list-source --json` prints against the previous snapshot, not the whole tree, so gitignored
+  files never show up as changes.
+- Plugin and marketplace `version` bumped to `0.23.0`.
+
+### Compatibility
+
+- Gitignored files that used to ride in the snapshot (and that `pull` restored) are no longer
+  uploaded as of artor-cli 0.27.0. Restore a specific one with a `!pattern` line in
+  `.artorignore`.
+
 ## [0.22.0] - 2026-09-26
 
 Mirrors **signed-in preview links** (artor-cli 0.27.0): `artor open --signed-in` lets an agent load a
