@@ -7,7 +7,7 @@ uses pre-1.0 (0.x) semver — new user-visible capability bumps MINOR, fixes/doc
 After a version bump, users pull it with `claude plugin marketplace update artor && claude plugin
 update artor@artor` (update only fires on a version bump).
 
-## [0.23.0] - 2026-09-26
+## [0.22.0] - 2026-09-26
 
 Mirrors **signed-in preview links** (artor-cli 0.27.0): `artor open --signed-in` lets an agent load a
 members-only preview in a browser it drives, from the CLI login alone. Also mirrors 0.27.0's
@@ -49,8 +49,7 @@ cannot infer from the old surface. **Requires artor-cli 0.27.0+.**
   (exit 1), where older CLIs sometimes silently ran with a default (the org space for `--space`,
   latest for `--ref`, 7 days for `--days`). A free-text value that really starts with `--` uses the
   `=` form (`--message=--hotfix`, `--desc=--beta`).
-- **Manifests**: `plugin.json` and `marketplace.json` bumped to `0.23.0` (0.22.0 is claimed by the
-  source-ignore-snapshot change).
+- **Manifests**: `plugin.json` and `marketplace.json` bumped to `0.22.0`.
 
 ## [0.21.0] - 2026-09-18
 
