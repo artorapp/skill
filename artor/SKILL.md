@@ -107,9 +107,10 @@ Four rules hold across the whole CLI, so they are stated once here rather than r
   nothing after it) is refused loudly, never read as absent - so an unset shell variable can't
   silently retarget another org. Since artor-cli **0.27.0**, **any** value flag followed by another
   `--flag` or by nothing fails before acting (exit 1), for most flags with `--x needs a value.`
-  (`--org`, `--comments`, `space rm --move-to`, `env`/`mock` `--scope`/`--version` and `-m`/`--message` keep their own message), where older CLIs sometimes ran with a default (the org space for `--space`, latest for `--ref`, 7 days for
-  `--days`). A free-text value that really starts with `--` takes the `=` form:
-  `--message=--hotfix`, `--desc=--beta`.
+  (`--org`, `--comments`, `space rm --move-to`, `env`/`mock` `--scope`/`--version` and
+  `-m`/`--message` keep their own message), where older CLIs sometimes ran with a default (the org
+  space for `--space`, latest for `--ref`, 7 days for `--days`). A free-text value that really
+  starts with `--` takes the `=` form: `--message=--hotfix`, `--desc=--beta`.
 
 ## Command reference
 

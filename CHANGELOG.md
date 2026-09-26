@@ -48,9 +48,11 @@ cannot infer from the old surface. **Requires artor-cli 0.27.0+.**
 
 - **`artor/SKILL.md`, "CLI conventions", flag-spelling rule**: since artor-cli 0.27.0 **any** value
   flag followed by another `--flag` or by nothing fails before acting (exit 1), usually with
-  `--x needs a value.` (`--org`, `--comments`, `space rm --move-to`, `env`/`mock` `--scope`/`--version` and `-m`/`--message` keep their own message), where older CLIs sometimes silently ran with a default (the org space for `--space`,
-  latest for `--ref`, 7 days for `--days`). A free-text value that really starts with `--` uses the
-  `=` form (`--message=--hotfix`, `--desc=--beta`).
+  `--x needs a value.` (`--org`, `--comments`, `space rm --move-to`, `env`/`mock`
+  `--scope`/`--version` and `-m`/`--message` keep their own message), where older CLIs sometimes
+  silently ran with a default (the org space for `--space`, latest for `--ref`, 7 days for
+  `--days`). A free-text value that really starts with `--` uses the `=` form
+  (`--message=--hotfix`, `--desc=--beta`).
 - **Manifests**: `plugin.json` and `marketplace.json` bumped to `0.22.0`.
 
 ## [0.21.0] - 2026-09-18
