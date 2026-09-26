@@ -7,6 +7,51 @@ uses pre-1.0 (0.x) semver — new user-visible capability bumps MINOR, fixes/doc
 After a version bump, users pull it with `claude plugin marketplace update artor && claude plugin
 update artor@artor` (update only fires on a version bump).
 
+## [0.23.0] - 2026-09-26
+
+Mirrors **signed-in preview links** (artor-cli 0.27.0): `artor open --signed-in` lets an agent load a
+members-only preview in a browser it drives, from the CLI login alone. Also mirrors 0.27.0's
+stricter value-flag parsing. MINOR bump: an agent gains an ability it did not have before (opening a
+members-only preview with no dashboard session), plus handling rules for a short-lived credential it
+cannot infer from the old surface. **Requires artor-cli 0.27.0+.**
+
+### Added
+
+- **`artor/SKILL.md`, command table**: a new "Publish, open, review" row,
+  `artor open --signed-in --json`, next to the existing `artor open --json` row.
+- **`artor/SKILL.md`, "Publishing notes": new "Opening a members-only preview in your own browser"
+  bullet**, the agent-facing contract:
+  - When to use it: a browser the agent controls (headless Playwright, a fresh profile) for
+    debugging or screenshots, with no dashboard session, would otherwise hit the sign-in wall.
+  - Output shape: `--signed-in --json` prints `{ url, authUrl, expiresAt }`; `--version <n>` /
+    `--alias <name>` pick the version exactly as on plain `open`.
+  - What `authUrl` is: a **single-use** signed-in link, valid **60 seconds**, scoped to one
+    version's preview host; opening it gives that browser **one hour** of member access to that
+    version only.
+  - Handling rules: open it promptly (within 60s) and exactly once, mint a fresh one if it expired
+    or was used; **never** paste it into chat, a PR, an issue, a log, or anything that unfurls
+    links (an unfurler consumes it); plain `artor open --json` stays the shareable URL and never
+    mints a credential.
+  - Older servers: the exact refusal line ("This server does not support --signed-in yet, or the
+    prototype is not visible to you.") and the fallback (have the user open `url` in their own
+    signed-in browser).
+- **`artor/SKILL.md`, "Interpreting requests"**: "screenshot / debug the preview in a browser"
+  maps to `artor open --signed-in --json` + one navigation to `authUrl`, reporting `url` (never
+  `authUrl`) back to the user.
+- **`artor/references/troubleshooting.md`**: two new rows, the `--signed-in` older-server /
+  not-visible refusal (check org and project first, then fall back to plain `url`) and the new
+  `--<flag> needs a value.` error (supply the value; `--flag=--value` for text starting with `--`).
+
+### Changed
+
+- **`artor/SKILL.md`, "CLI conventions", flag-spelling rule**: since artor-cli 0.27.0 **any** value
+  flag followed by another `--flag` or by nothing fails before acting with `--x needs a value.`
+  (exit 1), where older CLIs sometimes silently ran with a default (the org space for `--space`,
+  latest for `--ref`, 7 days for `--days`). A free-text value that really starts with `--` uses the
+  `=` form (`--message=--hotfix`, `--desc=--beta`).
+- **Manifests**: `plugin.json` and `marketplace.json` bumped to `0.23.0` (0.22.0 is claimed by the
+  source-ignore-snapshot change).
+
 ## [0.21.0] - 2026-09-18
 
 Mirrors **link passwords** for public share links (artor-cli 0.26.0). A public link can now ask for
