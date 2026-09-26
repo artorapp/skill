@@ -25,7 +25,7 @@ account-resolution error messages below; an older CLI still only supports one st
     the previous one on the server**, so a command still running elsewhere with the old token
     fails with `Token ... is no longer valid` and just needs a re-run.
   - How a command resolves which stored account and org act: `--org` wins, else the linked
-    folder's org, else (unlinked) the only org your accounts hold, else a picker on a terminal or
+    folder's org, else (unlinked) one account that belongs to exactly one org, else a picker on a terminal or
     a refusal asking for `--org` unattended (`artor org use` only pre-selects the picker row).
     Within a resolved org, a linked folder narrows to whichever accounts are members of its org
     (one means used silently, zero means a fail message naming the folder's org, two or more
@@ -35,10 +35,12 @@ account-resolution error messages below; an older CLI still only supports one st
     folder, always pass `--org <slug>`; add `--account <email>` only when the CLI's own refusal
     message says several accounts could act, never add `--account` speculatively, and never guess
     which stored account is "the" one to use.
-  - **`--account` is a global flag** on every command (not only `login`/`logout`/`account list`),
-    takes an email (case-insensitive) or a user id, and is **exact-only**: it is never part of the
+  - **`--account` is a global flag** on every command that acts as an account (`account list`,
+    `dev`, `update`, `update-skill`, `install*` and `unlink` refuse it), takes an email
+    (case-insensitive) or a user id, and is **exact-only**: it is never part of the
     partial-ref matching ladder documented under "CLI conventions", so a prefix or substring never
-    matches it.
+    matches it. If two stored accounts share an email, the CLI refuses and lists their user ids;
+    the fix is to ask the user which one, then pass that user id.
   - **Confirming who/where a command acted**: every command prints a `-> org · email · space /
     folder / project` line to **stderr** before it acts, and an object `--json` payload
     (`status`, `whoami`, `init`, `publish`, ...) carries the same information as a `target`/
@@ -75,13 +77,17 @@ account-resolution error messages below; an older CLI still only supports one st
   `ARTOR_NO_AUTOUPDATE` (also always off in CI). The `npx skills` route for every other agent stays
   nag-only since it can't apply the update itself. Calls out that the skill file itself may
   therefore change between sessions.
-- **`artor/references/troubleshooting.md`**: 15 new symptom rows quoting the CLI's exact
+- **`artor/references/troubleshooting.md`**: 22 new symptom rows quoting the CLI's exact
   account-resolution and folder/org-conflict messages verbatim: ambiguous-account, ambiguous-org,
   unknown `--account` value, no stored account in the folder's org (both the generic and the
   `--account`-named forms), the `--org`-disagrees-with-folder refusal (the general, the ambiguous-
-  ref, and the `init`-specific wording), the unidentified-login `--account` message, `artor
-  logout`'s own ambiguity and manual-revoke lines, and four `artor account list` per-row states
-  (`- token now signs in as a different account: ...`, `- token no longer valid: ...`, and the
+  ref, the `init`-specific, and the elsewhere-writer's `remix`/`pull --dir` wording), the
+  unlinked-folder `env`/`mock` refusal (`` `artor env` acts in the linked folder's org... ``), the
+  "Your org list changed" race refusal, the unidentified-login `--account` message, `artor
+  logout`'s own ambiguity, unknown-`--account`, and manual-revoke lines, `artor login`'s own
+  displaced-token manual-revoke line, the shared-email `--account` ambiguity, the
+  does-not-take-`--account` refusal, and four `artor account list` per-row states (`- token now
+  signs in as a different account: ...`, `- token no longer valid: ...`, and the
   unreachable/HTTP-error suffixes).
 
 ### Changed
@@ -94,7 +100,7 @@ account-resolution error messages below; an older CLI still only supports one st
     and default orgs are stored **per server**, so switching (on or off) keeps them and switching
     back finds them exactly as left.
   - The org-resolution chain was described as "linked folder → saved default → token org"; the
-    actual order is `--org` → linked folder org → (unlinked) the only org your accounts hold, else
+    actual order is `--org` → linked folder org → (unlinked) one account that belongs to exactly one org, else
     a picker on a terminal or a refusal asking for `--org` unattended, with `artor org use` only
     pre-selecting the picker row. Fixed everywhere it was stated: "First check", the `artor trash`
     note, `references/org-admin.md`, and two troubleshooting rows (one of which also named the
@@ -109,6 +115,38 @@ account-resolution error messages below; an older CLI still only supports one st
   - Documented `status --json`'s `accountAmbiguous`/`accountMismatch`/`orgNotFound`/
     `orgChoiceRequired` fields, and that only commands which resolve an account or org print the
     stderr target line (`login`/`logout`/`account list`/`dev` do not).
+- **A second review pass caught more stale claims and gaps, all fixed before this branch merged:**
+  - "`--account` works as a global flag on every command" was false: `artor account list`, `dev`,
+    `update`, `update-skill`, `install*` and `unlink` refuse it. Fixed in `SKILL.md` and
+    `CHANGELOG.md`.
+  - "`--account` has no ambiguity to resolve" was false: two stored accounts can share an email,
+    which the CLI refuses, listing their user ids. Fixed in `SKILL.md` and `CHANGELOG.md`.
+  - "The only org your accounts hold" (the unlinked-folder shortcut) was wrong when two accounts
+    share one org, which the CLI then asks about instead of shortcutting; replaced everywhere with
+    "one account that belongs to exactly one org" (`SKILL.md`, `references/org-admin.md`,
+    `CHANGELOG.md`).
+  - `references/troubleshooting.md`'s D-a re-link step quoted `artor link <project> --org <slug>`
+    for the unambiguous conflict; the CLI repeats the actual `--org` value there (`<slug>` is only
+    used in the ambiguous variant) - fixed to `--org <other>`.
+  - The manual-revoke troubleshooting row was labelled "(from `artor login`/`artor logout`)" with
+    only `artor logout`'s sentence; split into two rows, since `artor login` prints a different
+    one (`Couldn't revoke the previous token on the server; revoke it in Settings > CLI tokens.`)
+    for the token it displaced.
+  - The unidentified-login `--account` row's cause column said `--account` "matched" a parked
+    login; nothing is matched there - reworded to describe the actual condition (an older CLI's
+    still-unidentified login, with no email to match against yet).
+  - The pre-existing `Already linked to "<name>" (<id>)` row used an em dash and didn't say
+    `--force` only re-points within the same org; fixed the punctuation and added that limit
+    (moving to another org needs `artor unlink --link-only` first).
+  - Two troubleshooting rows told an agent to "re-run with `--account <email>`" without saying
+    where the email comes from; reworded to "the `--account <email>` the user names", matching the
+    skill's own rule against guessing.
+  - Added the six troubleshooting rows listed above that a real agent run can hit: the unlinked-
+    folder `env`/`mock` refusal, the "Your org list changed" race (including a note that a fixed
+    CLI also raises it for `init`/`link` runs with no `--org` at all, once the org an unlinked
+    resolution picked drops off the live list before the write), the elsewhere-writer's `--org`
+    conflict wording (`remix`, `pull --dir`), `artor logout --account`'s own not-found message, the
+    shared-email `--account` ambiguity, and the does-not-take-`--account` refusal.
 
 ## [0.23.2] - 2026-09-26
 

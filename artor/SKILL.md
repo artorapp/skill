@@ -41,8 +41,9 @@ than paraphrasing.
     prints to **stderr** before it acts - never assume the most-recently-logged-in account is the
     one that acted.
 - **Never guess the org - read it.** Both commands report the **active** org: the one commands
-  actually target, resolved as **`--org` → linked folder org → (unlinked) the only org your
-  accounts hold, else a picker on a terminal / a refusal asking for `--org` unattended**;
+  actually target, resolved as **`--org` → linked folder org → (unlinked) one account that
+  belongs to exactly one org, else a picker on a terminal / a refusal asking for `--org`
+  unattended**;
   `artor org use` only pre-selects the picker row. `--json` on either adds `activeOrg`, `role`,
   `homeOrgMismatch` and `orgsUnavailable`; read those fields instead of inferring an org from a
   project slug or a past command. The **home** org is identity only, never the operation target,
@@ -105,7 +106,8 @@ global "active account" - **the account follows the folder**, exactly like the o
   resolve it from and no picker to fall back on). When the CLI refuses with `NEED_ACCOUNT` /
   `NEED_ORG`, **ask the user** which one; never pick an entry from `artor account list`/
   `artor org list` yourself. `--account` takes an email (case-insensitive) or the account's user
-  id, and works as a **global flag on every command**, not only `login`/`logout`/`account list`.
+  id, and is a global flag on every command that acts as an account (plus `login`/`logout`).
+  `artor account list`, `dev`, `update`, `update-skill`, `install*` and `unlink` refuse it.
 - **A `--org` that disagrees with the linked folder is refused, never silently followed or
   silently ignored.** Inside a linked folder, `--org <other>` fails with a message naming the
   folder's actual org and the two ways to proceed: `artor unlink --link-only` then
@@ -183,7 +185,8 @@ Four rules hold across the whole CLI, so they are stated once here rather than r
     (`restore`, `rename`, `remix`, `pull` without `--force`).
   - **`--account <email>` is never part of this ladder - it is exact-only.** It matches an
     account's user id exactly, or its email case-insensitively; there is no prefix/substring
-    fallback and no ambiguity to resolve, so pass the full email as `artor account list` prints it.
+    fallback. If two stored accounts share an email, the CLI refuses and lists their user ids;
+    ask the user which one, then pass that user id.
 - **Confirmations have one grammar.** `-y` / `--yes` anywhere in the arguments pre-approves and
   skips the prompt. **Declining exits `1`** with `✗ Cancelled.` on stderr - a non-zero exit after a
   destructive command may mean "the user said no", not "it broke", so read the message before
@@ -243,7 +246,7 @@ Four rules hold across the whole CLI, so they are stated once here rather than r
 > whether a name is already taken in a Space the user cannot see.
 
 > **`artor trash` is org-aware now.** It resolves the org the same way `restore`/`rm` do
-> (**`--org` → linked folder org → (unlinked) the only org your accounts hold, else a picker on a
+> (**`--org` → linked folder org → (unlinked) one account that belongs to exactly one org, else a picker on a
 > terminal / a refusal asking for `--org` unattended**) and names the org in its heading, so
 > the listing and the `artor restore <ref>` you print next always look at the same tenant.
 > Previously it always fell back to the token's home org, which could list a **different** org's

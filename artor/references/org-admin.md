@@ -244,7 +244,7 @@ artor usage [--org <ref>] [--json]
   (MB), or `null` when an older server does not send it: treat `null` as unknown, never as zero.
   `storage.measuredAt` is an ISO timestamp or `null`.
 - Org resolution: `--org <ref>` wins (a present-but-empty value is refused, never read as absent),
-  else the **linked folder's** org, else (unlinked) the only org your accounts hold, else a picker
+  else the **linked folder's** org, else (unlinked) one account that belongs to exactly one org, else a picker
   on a terminal / a refusal asking for `--org` unattended. `--json` names the org too.
 - **Read each cap honestly, they are not interchangeable:** a `null` storage or views cap means
   **unlimited**; a `null` seat cap means the tier bills **per seat**, NOT unlimited; and a
