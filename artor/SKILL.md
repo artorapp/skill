@@ -383,7 +383,8 @@ works identically; a deck is just a project whose `kind` is `"slides"` instead o
   3. the hardcoded excludes, which no ignore file can negate: `.env*`, `.envrc`, `.npmrc`,
      `.yarnrc*`, `.netrc`, `credentials*`, `kubeconfig`, `*.pem`, `*.key`, `id_rsa*` and similar
      secret files (also excluded from served bundles), plus `node_modules`, `.git`, `.next`,
-     `.artor`, `.aws`, `.ssh`, `.vercel` and other bulky, local-only or tool config directories.
+     `.artor`, `.claude`, `.aws`, `.ssh`, `.vercel` and other bulky, local-only or tool config
+     directories.
   A project with no git at all works the same with only `.artorignore`. `.git/info/exclude` and
   the global git excludes are not read. Ignored directories are never even walked, and a file
   inside an excluded directory cannot be restored on its own (same as git): restore the directory
