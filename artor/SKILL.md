@@ -166,6 +166,7 @@ Four rules hold across the whole CLI, so they are stated once here rather than r
 | Skip the web-sdk update check (see notes)   | `artor publish --no-sdk-update`                            |
 | Force artifact type / entry / output dir    | `artor publish --static\|--node [--entry <s>] [--dir <p>]` |
 | Skip the boot smoke test (see notes)        | `artor publish --no-smoke`                                 |
+| List what the source snapshot would upload  | `artor publish --list-source` (no build, no upload)        |
 | Resolve local-vs-server mock drift (see notes) | `artor publish --mocks=local\|server`                    |
 | Open the latest / a specific version        | `artor open` / `artor open --version 3` / `--alias <name>` |
 | Get the preview URL without a browser       | `artor open --json` (prints `{ "url": … }`, no launch)     |
@@ -368,9 +369,73 @@ works identically; a deck is just a project whose `kind` is `"slides"` instead o
   falls back to `(open it manually: <url>)` — so it is safe in headless/CI environments. Prefer
   `artor open --json` to get `{ "url": … }` with no browser launch at all. With no live version,
   plain `open` prints "No live versions to open yet. Run `artor publish` first." (info, exit 0).
-- Secrets are never uploaded: `.env*`, `.envrc`, `.npmrc`, `.yarnrc*`, `.netrc`, `credentials*`,
-  `kubeconfig`, `*.pem`, `*.key`, `id_rsa*`, and similar secret files are force-excluded regardless
-  of `.gitignore` (as are `node_modules`, `.git`, `.next`, `.artor`, …).
+- **What goes into the source snapshot** (artor-cli 0.27.0+). Every publish also uploads a
+  snapshot of the project directory that `pull` and `remix` restore later. The file list is built
+  by ONE ignore engine with no git dependency, in this order:
+  1. `.gitignore` files at every level, each scoped to its own directory (nested apps' rules
+     count, so a gitignored `ios/`, `android/`, `dist/` or `.expo/` never rides along), plus the
+     `.gitignore` files of the parent directories up to the repository root, so publishing from
+     `apps/web` in a monorepo still honours the root rules;
+  2. `.artorignore` files, same syntax and scoping but read only inside the published folder
+     (an `.artorignore` in a parent folder is not read), applied on top: add excludes for files that
+     are tracked but should not be shared (large fixtures, design sources), or force-include a
+     gitignored file `pull` must restore with `!pattern`;
+  3. the hardcoded excludes, which no ignore file can negate: `.env*`, `.envrc`, `.npmrc`,
+     `.yarnrc*`, `.netrc`, `credentials*`, `kubeconfig`, `*.pem`, `*.key`, `id_rsa*` and similar
+     secret files (also excluded from served bundles), plus `node_modules`, `.git`, `.next`,
+     `.artor`, `.aws`, `.ssh`, `.vercel` and other bulky, local-only or tool config directories.
+  A project with no git at all works the same with only `.artorignore`. `.git/info/exclude` and
+  the global git excludes are not read. Ignored directories are never even walked, and a file
+  inside an excluded directory cannot be restored on its own (same as git): restore the directory
+  first (`!dist/`), then narrow with further excludes. Symlinks are skipped with a warning when they
+  point outside the project, at an excluded or ignored file, or loop. `artor template push` packs
+  with the same rules. A hand-written static site published from the project root (no build
+  step) applies only `.artorignore` and the secret excludes to the SERVED bundle, never
+  `.gitignore`, so a gitignored generated `output.css` still ships; the snapshot uses all rules.
+- **The snapshot is capped at 50 MB compressed** (Artor is a preview tool, not source control).
+  The CLI measures it BEFORE building or uploading anything and stops with the total plus the
+  heaviest directories and files when it is over (it also stops past 200 MB unpacked, past 100,000
+  files, or when it compresses more than 15 times over, the limits `pull` can restore); above
+  25 MB it prints a one-line warning. There is no override flag: fix it with `.gitignore` or `.artorignore`, then check with `artor publish --list-source`,
+  which prints every file that would ship (with sizes and totals) and exits without building,
+  signing in or uploading; `--list-source --json` gives `{ files: [{ path, size, sha }], rawBytes,
+  compressedBytes, count, wouldStop, breaches, empty }` for scripts (`wouldStop` true means a
+  real publish would refuse, `breaches` says why, `empty` means nothing but ignore files would be
+  saved). The list describes the source snapshot only (the favicon
+  is a separate small payload). A 413 from the server names the cap and points to `artor update`
+  and the same command. Do not stage a copy of the project to slim it down; write an ignore rule
+  instead. An old CLI (before 0.27.0) reads no ignore file, so its only fix is `artor update`.
+- **Slimming a snapshot (what to put in `.artorignore`).** When publish stops or warns on size,
+  or before a first publish of an unfamiliar project:
+  1. Run `artor publish --list-source --json` and sort `files` by `size`; the stop message also
+     names the heaviest directories.
+  2. Sort each heavy path into one of three buckets:
+     - **Build output or caches git should already ignore** (`ios/build`, `ios/Pods`,
+       `android/app/build`, `.expo`, `dist`, `build`, `out`, `.turbo`, `.cache`, `coverage`,
+       `*.log`): add them to the project's `.gitignore`, which is the right fix for git too.
+     - **Tracked files a reviewer or remixer does not need** (design sources `*.fig`/`*.psd`/
+       `*.sketch`, raw video or audio, test fixtures, data dumps, `*.zip` archives): add them to
+       `.artorignore`, so git keeps tracking them while Artor leaves them out.
+     - **Files the prototype needs to run** (images, fonts, the data the app loads): do not
+       ignore them, or a `pull`/remix will be broken. Compress or resize them instead, and tell
+       the user.
+  3. Write the narrowest pattern that works (`assets/raw/` rather than `assets/`), re-run
+     `--list-source --json` until `wouldStop` is false, then publish.
+  4. Tell the user what you added and why. Never ignore a file the build needs, and never edit a
+     parent repository's ignore files; use the project's own `.artorignore`. To bring back a file
+     a parent `.gitignore` drops, add a `!` line (for a folder, `!folder/` first).
+- **An empty snapshot is a warning, never a stop.** If the ignore rules leave nothing to save
+  (typically a parent repo's `.gitignore` containing `*` or `/apps/**`), the publish still ships
+  and prints one warning naming the ignore file responsible; `pull` and remix will then restore
+  nothing. Tell the user, and if they want the source kept, add `!` patterns for those files to
+  the project's own `.artorignore` (never edit the parent repo's rules on their behalf).
+  `--list-source --json` reports it as `empty: true` (with `wouldStop: false`).
+- **Hand-written static site served from the project root:** here `.artorignore` also removes a
+  file from the SERVED site, while `.gitignore` only removes it from the saved source. When
+  slimming such a site, prefer `.gitignore` for anything the page still loads, but only if `pull`
+  and remix need not restore it (a gitignored asset is missing from the saved source); otherwise
+  make the file smaller. `.gitignore` and
+  `.artorignore` themselves are never served.
 - **If `@artorapp/web-sdk` is pinned to `"latest"`** (what `artor init` writes), publish also checks
   npm for a newer version and offers to update it before building. It never blocks or fails a
   publish — it asks on a TTY, updates silently with `--yes`, and skips the check with no TTY and no
@@ -505,9 +570,12 @@ Do this by default unless the user has already supplied a `--message`.
    - **Legacy row with no stored source:** same `pull failed (HTTP …)` shape — fall back to asking
      the user for a manual `--message`.
 
-2. **Diff the working tree against `$PREV` locally**, excluding the same secret paths `artor publish`
-   strips (`.env*`, `.npmrc`, `.yarnrc*`, `.netrc`, `*.pem`, `*.key`, `kubeconfig`, `credentials*`,
-   and similar). **Never read secret-adjacent files into the diff or the prompt.**
+2. **Diff the working tree against `$PREV` locally**, excluding the same paths `artor publish`
+   strips: everything matched by `.gitignore` / `.artorignore`, and the secret files it always
+   drops (`.env*`, `.npmrc`, `.yarnrc*`, `.netrc`, `*.pem`, `*.key`, `kubeconfig`, `credentials*`,
+   and similar). `artor publish --list-source --json` prints the exact set that ships as JSON
+   (`files[].path`), so diff exactly those paths against `$PREV` rather than the whole tree.
+   **Never read secret-adjacent files into the diff or the prompt.**
 
 3. **Summarize the diff** as a concise markdown/bullet changelog of the meaningful changes (features,
    UI tweaks, removed pages, fixed bugs). Keep it **under 2 000 characters** (a server backstop, but
