@@ -223,7 +223,7 @@ artor folder clear <ref> [--yes]
 ## Plan usage - `artor usage`
 
 What the org has consumed against its plan limits. **Owner/admin only** (the same gate as
-Settings, Usage in the dashboard); a non-admin and a non-member both get the same 403.
+Settings > Usage in the dashboard); a non-admin and a non-member both get the same 403.
 
 ```bash
 artor usage [--org <ref>] [--json]
@@ -237,8 +237,10 @@ artor usage [--org <ref>] [--json]
   `static 200 MB, live app 1,000 MB`). The real values come from the server for this org
   (plan and any custom limit): read them off the row, never from this example. No bar: it is a
   per-publish limit, not a running total. Extra publisher seats never raise it.
-- `--json` adds an optional `limits: { staticBundleMb, nodeBundleMb }` (MB); an older server
-  omits it, so treat it as absent rather than as zero.
+- `--json` prints one object the CLI defines: `{ plan, storage, seats, views, limits, org }`
+  (fields a server sends beyond these are dropped). `limits` is `{ staticBundleMb, nodeBundleMb }`
+  (MB), or `null` when an older server does not send it: treat `null` as unknown, never as zero.
+  `storage.measuredAt` is an ISO timestamp or `null`.
 - Org resolution: `--org <ref>` wins (a present-but-empty value is refused, never read as absent),
   else the **linked folder's** org, else the saved default / token org. `--json` names the org too.
 - **Read each cap honestly, they are not interchangeable:** a `null` storage or views cap means

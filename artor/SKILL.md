@@ -221,34 +221,40 @@ non-member get the same 403. Read the caps honestly: a `null` storage/views cap 
 but a `null` seat cap means the tier bills **per seat**, and a never-measured storage reading says
 so rather than showing `0`. Details: `references/org-admin.md`.
 
-**Prices and plan limits: read https://artor.app/pricing.md.** For any question about prices,
-what a plan includes, or "will this fit on my plan" (storage, views, prototypes running at once,
-static and live app build size, memory), fetch that page and answer from it. Never quote prices or
-limits from memory or from this file: they change, and that page is kept in step with the website.
-Storage, views and prototypes running at once grow with each extra publisher seat on Pro and
-Team (Enterprise limits are set by contract); build size and memory never do. An org's actual limits can differ (custom limits): `artor usage`
-(owner/admin) shows the real numbers. Only an org owner or admin can upgrade (Settings, Billing);
-anyone else should ask an org admin. Enterprise is by contact, not self-serve.
+**Prices and plan limits: read https://artor.app/pricing.md.** For any question about prices, what a
+plan includes, or "will this fit on my plan" (storage, views, prototypes running at once, static and
+live app build size, memory), fetch that page and answer from it. Never quote prices or limits from
+memory or from this file: they change, and that page is kept in step with the website. Storage,
+views and prototypes running at once grow with each extra publisher seat on Pro and Team (Enterprise
+limits are set by contract); build size and memory never do. An org's actual limits can differ
+(custom limits): `artor usage` (owner/admin) shows the real numbers. Only an org owner or admin can
+upgrade (Settings > Billing); anyone else should ask an org admin. Enterprise is by contact, not
+self-serve.
 
 **Usage block after a publish (artor-cli 0.28.0+).** At the end of a publish the CLI prints fill
 bars: this build against its size limit and the saved source against 50 MB (on an interactive
-terminal, or anywhere once one reaches 75%), plus the org's storage and public-link views (last
-30 days) only once they reach 75% of the organization's limit, each with ONE `⚠` line naming the
-next step. Every publisher sees the build and source sizes; storage and views show exact numbers
-to owners/admins only, a percentage to anyone else. The step comes from the server: upgrade the
-plan (Settings, Billing), add publisher seats (Settings, Team), or contact support. Admins get the
-per-seat amount ("each adds ..."); other publishers get no amounts, only "Ask an org admin to ...".
-While self-serve upgrades are paused the upgrade step is not offered at all. Relay that line to the
-user as written; do not invent a fix, and do not suggest an upgrade the line does not offer. A
+terminal, or anywhere once one reaches 75%), plus the org's storage and public-link views (last 30
+days) only once they reach 75% of the organization's limit, each with a warning line and ONE next step
+(a step several metrics share is printed once, on its own line after theirs). Every publisher sees
+the build and source sizes; storage and views show exact numbers to owners/admins only, a percentage
+to anyone else. The step comes from the server: upgrade the plan (Settings > Billing), add publisher
+seats (Settings > Team), or contact support. Admins get the per-seat amount ("each adds ..."); other
+publishers get no amounts, only "Ask an org admin to ...". While self-serve upgrades are paused the
+upgrade step is not offered at all. A server newer than the CLI may send a step the CLI does not
+know: it then prints the server's own wording, or the metric with no step. Relay what is printed to
+the user as written; do not invent a fix, and do not suggest an upgrade the line does not offer. A
 views line is a notice (views never block a publish); storage at 100% stops new publishes (the
 refusal shows exact numbers only to an admin). Near-limit warnings go to stderr. Under `--json`
 there are no bars and the result carries a `usage` object (`null` against an older server; each
-metric's per-seat increment is `perSeat`). `artor usage` (owner/admin) shows the same bars plus
-the org's static and live app build limits. A build over its limit (static or live app) gets a
-413 naming the limit and the step: upgrade the plan, or contact support. Extra seats never raise
-a build limit. Relay the step the refusal names: only when it offers an upgrade, also point the
-user to https://artor.app/pricing.md; when it says contact support, relay the support step and
-do not bring up plans (a custom limit or paused upgrades can rule an upgrade out on any plan).
+metric's per-seat increment is `perSeat`). `artor usage` (owner/admin) shows the same bars plus the
+org's static and live app build limits. A build over its limit (static or live app) gets a 413
+starting "Build too large:" that names the "static build limit" or "live app build limit", a
+self-fix, and the step: upgrade the plan, or contact support. When an upgrade would help, the CLI
+adds "See plan limits: https://artor.app/#pricing" (the human page). Extra seats never raise a build
+limit. Relay the step the refusal names: only when it offers an upgrade, also fetch
+https://artor.app/pricing.md to answer plan questions and point the user there; when it says contact
+support, relay the support step and do not bring up plans (a custom limit or paused upgrades can
+rule an upgrade out on any plan).
 
 **Spaces - the access wall.** `artor space` manages who in the org can reach a
 set of prototypes (**Org → Space → Folder → Prototype**); folders are cosmetic *within* a Space.
@@ -362,8 +368,9 @@ works identically; a deck is just a project whose `kind` is `"slides"` instead o
   `--alias` in anything you write.
 - **`artor publish --json` is the agent-facing form.** It emits exactly one JSON object on stdout:
   `{ version, url, aliases, artifactType, usage }` (`usage` is `null` against an older
-  server), plus `replaced` when the server reports an overwrite. It routes every progress line, warning, smoke-test result, and the build/install
-  subprocess transcript to stderr, so the payload stays parseable. It **never prompts**: the
+  server), plus `replaced` when the server reports an overwrite. It routes every progress line,
+  warning, smoke-test result, and the build/install subprocess transcript to stderr, so the payload
+  stays parseable. It **never prompts**: the
   first-publish confirm and the web-sdk offer take their informational path, while a `next.config`
   patch fails loud asking for `--yes` and a real mock conflict fails loud asking for
   `--mocks=local|server`. Read `version` and `url` from the object rather than parsing prose.
@@ -421,7 +428,7 @@ works identically; a deck is just a project whose `kind` is `"slides"` instead o
   - To give a person a link, use plain `artor open --json` (`url`), which never mints a credential.
   - An older server answers "This server does not support --signed-in yet, or the prototype is not
     visible to you." - fall back to asking the user to open `url` in their own signed-in browser.
-- **What goes into the source snapshot** (artor-cli 0.27.0+). Every publish also uploads a
+- **What goes into the source snapshot** (artor-cli 0.28.0+). Every publish also uploads a
   snapshot of the project directory that `pull` and `remix` restore later. The file list is built
   by ONE ignore engine with no git dependency, in this order:
   1. `.gitignore` files at every level, each scoped to its own directory (nested apps' rules
@@ -433,10 +440,10 @@ works identically; a deck is just a project whose `kind` is `"slides"` instead o
      are tracked but should not be shared (large fixtures, design sources), or force-include a
      gitignored file `pull` must restore with `!pattern`;
   3. the hardcoded excludes, which no ignore file can negate: `.env*`, `.envrc`, `.npmrc`,
-     `.yarnrc*`, `.netrc`, `credentials*`, `kubeconfig`, `*.pem`, `*.key`, `id_rsa*` and similar
-     secret files (also excluded from served bundles), plus `node_modules`, `.git`, `.next`,
-     `.artor`, `.claude`, `.aws`, `.ssh`, `.vercel` and other bulky, local-only or tool config
-     directories.
+     `.yarnrc*`, `.netrc`, `.git-credentials`, `.pgpass`, `.dev.vars`, `credentials*`,
+     `kubeconfig`, `*.pem`, `*.key`, `id_rsa*` and similar secret files (also excluded from served
+     bundles), plus `node_modules`, `.git`, `.next`, `.artor`, `.claude`, `.aws`, `.ssh`,
+     `.docker`, `.vercel` and other bulky, local-only or tool config directories.
   A project with no git at all works the same with only `.artorignore`. `.git/info/exclude` and
   the global git excludes are not read. Ignored directories are never even walked, and a file
   inside an excluded directory cannot be restored on its own (same as git): restore the directory
@@ -446,20 +453,22 @@ works identically; a deck is just a project whose `kind` is `"slides"` instead o
   step) applies only `.artorignore` and the secret excludes to the SERVED bundle, never
   `.gitignore`, so a gitignored generated `output.css` still ships; the snapshot uses all rules.
 - **The snapshot is capped at 50 MB compressed** (Artor is a preview tool, not source control).
-  The CLI measures it BEFORE building or uploading anything and stops with the total plus the
-  heaviest directories and files when it is over (it also stops past 200 MB unpacked, past 100,000
-  files, or when it compresses more than 15 times over, the limits `pull` can restore); at 75% of
-  the cap (about 37.5 MB, artor-cli 0.28.0+; 25 MB before) it prints a one-line warning with the
-  percent. There is no override flag: fix it with `.gitignore` or `.artorignore`, then check with
-  `artor publish --list-source`,
-  which prints every file that would ship (with sizes and totals) and exits without building,
-  signing in or uploading; `--list-source --json` gives `{ files: [{ path, size, sha }], rawBytes,
-  compressedBytes, count, wouldStop, breaches, empty }` for scripts (`wouldStop` true means a
-  real publish would refuse, `breaches` says why, `empty` means nothing but ignore files would be
-  saved). The list describes the source snapshot only (the favicon
-  is a separate small payload). A 413 from the server names the cap and points to `artor update`
-  and the same command. Do not stage a copy of the project to slim it down; write an ignore rule
-  instead. An old CLI (before 0.27.0) reads no ignore file, so its only fix is `artor update`.
+  The CLI prints `Checking source snapshot…`, measures it BEFORE building or uploading anything,
+  and stops with the total plus the heaviest directories and files when it is over (it also stops
+  past 200 MB of file content, past 100,000 files, or when it compresses more than 15 times over,
+  the limits `pull` can restore; when the file sizes alone already break the 200 MB or 100,000-file
+  limit it stops without reading or compressing any file, with the same report); at 75% of the cap
+  (about 37.5 MB) it prints a one-line warning with the percent. There is no override flag: fix
+  it with `.gitignore` or `.artorignore`, then check with `artor publish --list-source`, which
+  prints every file that would ship (with sizes and totals) and exits without building, signing in
+  or uploading; `--list-source --json` gives `{ files: [{ path, size, sha }], rawBytes,
+  compressedBytes, count, wouldStop, breaches, empty }` for scripts (`wouldStop` true means a real
+  publish would refuse, `breaches` says why, `empty` means nothing but ignore files would be saved;
+  `compressedBytes` and each `sha` are `null` when a restore limit is already broken and nothing
+  was packed). The list describes the source snapshot only (the favicon is a separate small
+  payload). A 413 from the server names the cap and points to `artor update` and the same command.
+  Do not stage a copy of the project to slim it down; write an ignore rule instead. An old CLI
+  (before 0.28.0) reads no ignore file, so its only fix is `artor update`.
 - **Slimming a snapshot (what to put in `.artorignore`).** When publish stops or warns on size,
   or before a first publish of an unfamiliar project:
   1. Run `artor publish --list-source --json` and sort `files` by `size`; the stop message also
@@ -627,8 +636,8 @@ Do this by default unless the user has already supplied a `--message`.
 
 2. **Diff the working tree against `$PREV` locally**, excluding the same paths `artor publish`
    strips: everything matched by `.gitignore` / `.artorignore`, and the secret files it always
-   drops (`.env*`, `.npmrc`, `.yarnrc*`, `.netrc`, `*.pem`, `*.key`, `kubeconfig`, `credentials*`,
-   and similar). `artor publish --list-source --json` prints the exact set that ships as JSON
+   drops (`.env*`, `.npmrc`, `.yarnrc*`, `.netrc`, `.git-credentials`, `.pgpass`, `.dev.vars`,
+   `*.pem`, `*.key`, `kubeconfig`, `credentials*`, `.docker/`, and similar). `artor publish --list-source --json` prints the exact set that ships as JSON
    (`files[].path`), so diff exactly those paths against `$PREV` rather than the whole tree.
    **Never read secret-adjacent files into the diff or the prompt.**
 
