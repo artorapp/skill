@@ -7,6 +7,22 @@ uses pre-1.0 (0.x) semver — new user-visible capability bumps MINOR, fixes/doc
 After a version bump, users pull it with `claude plugin marketplace update artor && claude plugin
 update artor@artor` (update only fires on a version bump).
 
+## [0.23.2] - 2026-09-26
+
+Docs-only PATCH: the troubleshooting table learns the CLI's new blocked-account messages.
+**Requires artor-cli 0.28.0+ for the new messages**; older CLIs print the generic line in every
+case.
+
+- **Suspended account.** `This account is suspended. Contact your organization admin or
+  support.` The agent stops and tells the user to contact their admin or support, and never
+  retries `artor login` in a loop (signing in again cannot lift a suspension).
+- **Account scheduled for deletion.** ``This account is scheduled for deletion on {date}. Run
+  `artor login` to restore it.`` The agent tells the user to run `artor login` and choose
+  **Cancel deletion & sign in** in the browser; it cannot cancel the deletion for them. The old
+  CLI token works again once the account is restored.
+- **Generic token failure.** ``Token invalid or revoked. Run `artor login`.`` now has its own row
+  (revoked, expired, or permanently deleted account).
+
 ## [0.23.1] - 2026-09-26
 
 Docs-only PATCH, keeping the skill in step with the CLI and the website.
