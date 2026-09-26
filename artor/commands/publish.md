@@ -105,7 +105,8 @@ and warns on stderr** - the same spelling means a version NUMBER on `artor open`
 version at `-V`. Write `--alias`; if both are passed, `--alias` wins.
 
 **`--json` for a scripted run.** `artor publish --json` prints one object on stdout
-(`{ version, url, aliases, artifactType }`, plus `replaced` on an overwrite) and puts every
+(`{ version, url, aliases, artifactType, usage }`, `usage` being `null` against an older
+server, plus `replaced` on an overwrite) and puts every
 progress line, warning, and build subprocess transcript on stderr. It never prompts: a
 `next.config` patch fails loud asking for `--yes`, a real mock conflict fails loud asking for
 `--mocks=local|server`. Read `version`/`url` from the object rather than parsing prose.

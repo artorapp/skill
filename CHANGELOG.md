@@ -7,6 +7,116 @@ uses pre-1.0 (0.x) semver — new user-visible capability bumps MINOR, fixes/doc
 After a version bump, users pull it with `claude plugin marketplace update artor && claude plugin
 update artor@artor` (update only fires on a version bump).
 
+## [0.23.0] - 2026-09-26
+
+Mirrors artor-cli **0.28.0**, which ships two features together: the **source snapshot ignore
+rules** with a **50 MB source cap**, and **static build size by plan** with **usage bars** and a
+**pricing page for agents**. `artor publish` now builds its source snapshot through one ignore
+engine that honours every `.gitignore` in the tree plus a new `.artorignore`, and refuses an
+oversized snapshot locally with a directory breakdown before any upload; at the end of a publish
+it shows how close the build, the source, storage and public-link views are to their limits.
+MINOR bump: an agent gains new command surface (`--list-source`, `.artorignore`, the `usage`
+object) and new failure modes it must resolve with an ignore rule or the step the CLI names,
+never a workaround. **Requires artor-cli 0.28.0+** for the new behavior.
+
+### Added
+
+- **`artor/SKILL.md`, new "What goes into the source snapshot" note** under "Publishing notes":
+  - The snapshot file list is built by ONE engine with no git dependency: `.gitignore` files at
+    every level plus the parent directories up to the repository root (each scoped to its own
+    directory, so a nested app's `ios/`, `android/`, `dist/` or `.expo/` is never uploaded and a
+    monorepo's root rules still apply from a sub-app), then `.artorignore` files (same syntax, add
+    excludes for tracked-but-private files or force-include a gitignored file or directory with
+    `!pattern`), then the hardcoded secret and directory excludes that no ignore file can negate.
+  - The hardcoded excludes list `.git-credentials`, `.pgpass`, `.dev.vars` and the `.docker` and
+    `.claude` folders next to `.env*`, `.npmrc`, key files and the other secret files.
+  - A project with no git works the same with only `.artorignore`; `.git/info/exclude` and the
+    global git excludes are not read; ignored directories are never walked.
+  - **The snapshot is capped at 50 MB compressed.** After a `Checking source snapshot…` line the
+    CLI stops BEFORE building or uploading when it is over and prints the total plus the heaviest
+    directories and files; from 75% of the cap (about 37.5 MB) it warns in one line with the
+    percent. The size stop also covers the file-content (200 MB), file-count (100,000) and
+    compression ratio limits, and when the file sizes alone already break a restore limit it
+    stops without reading any file, with the same report.
+  - No override flag: the fix is an ignore rule, verified with the new
+    `artor publish --list-source` (`--json` for scripts), which prints every file that would ship
+    with sizes and totals and exits without building, signing in or uploading. A server 413 names
+    the cap and leads with `artor update`, since a CLI before 0.28.0 reads no ignore file.
+  - `--list-source --json` also reports `wouldStop`, `breaches` and `empty` (and `null`
+    `compressedBytes` / `sha` when nothing was packed), so an agent can predict a refusal without
+    hardcoding any limit.
+  - Explicit guidance: never stage a slimmed copy of the project to get under the cap; write an
+    ignore rule instead.
+  - An empty snapshot (a parent repo's `.gitignore` of `*` or `/apps/**`) is a warning, never a
+    stop: the publish ships, the warning names the responsible ignore file, and the agent offers
+    `!` patterns in the project's own `.artorignore` if the user wants the source kept.
+  - For a hand-written static site served from its root, `.artorignore` also removes a file from
+    the served site (never `.gitignore`); the skill steers large-asset fixes to `.gitignore` there
+    only when `pull` and remix need not restore them, otherwise to making the file smaller. Ignore
+    files are never served.
+  - New "Slimming a snapshot" playbook: list the source, sort heavy paths into build output
+    (`.gitignore`), tracked-but-unneeded files (`.artorignore`) and files the prototype needs
+    (compress, never ignore), write the narrowest pattern, re-check, and tell the user.
+  - `.artorignore` is read only inside the published folder; symlinks are skipped when they
+    leave the project, point at an excluded or ignored file, or loop; `artor template push` packs
+    with the same rules.
+- **Prices and plan limits come from https://artor.app/pricing.md.** New rule: for any question
+  about prices, what a plan includes or "will this fit on my plan", the agent fetches that page
+  and answers from it, never from memory or from this file.
+  - Pooled limits explained: storage, views and prototypes running at once grow with each extra
+    publisher seat on Pro and Team (Enterprise is by contract); build size and memory never do.
+  - Real per-org numbers (custom limits) come from `artor usage` (owner/admin).
+  - Only an org owner or admin upgrades (Settings > Billing); anyone else asks an org admin;
+    Enterprise is by contact.
+- **Usage block after a publish.**
+  - Fill bars for this build (against its plan limit) and the saved source (against 50 MB), on
+    an interactive terminal or anywhere once one reaches 75%. Every publisher sees these sizes.
+  - The org's storage and public-link views (last 30 days) appear only at 75% of the org's
+    limit, each with a warning line and one next step the server chose: upgrade the plan
+    (Settings > Billing), add publisher seats (Settings > Team), or contact support. A step several
+    metrics share is printed once, after their lines.
+  - Admins see exact numbers and the per-seat amount; other publishers see a percentage, no
+    amounts, and "Ask an org admin to ...". The upgrade step is not offered while self-serve
+    upgrades are paused. A step from a server newer than the CLI is printed in the server's own
+    words (or the metric shows no step). The agent relays what is printed and never invents an
+    upgrade.
+  - Views are a notice (they never block a publish); storage at 100% stops new publishes, and
+    that refusal shows exact numbers only to an admin.
+  - Near-limit warnings go to stderr. `--json`: no bars, and a `usage` object in the result
+    (`null` against an older server; the per-seat increment is `perSeat`).
+- **Build over its limit (static or live app):** the 413 starts "Build too large:", names the
+  "static build limit" or "live app build limit", a self-fix and the step (upgrade the plan, or
+  contact support; extra seats never raise a build limit). When an upgrade would help the CLI adds
+  "See plan limits: https://artor.app/#pricing". The agent relays the step, and fetches and points
+  to https://artor.app/pricing.md only when the step offers an upgrade; a support step is relayed
+  as is, with no plan pitch (a custom limit or paused upgrades can rule an upgrade out on any
+  plan).
+- **Command reference:** new row for `artor publish --list-source`.
+
+### Changed
+
+- **"Secrets are never uploaded" note** replaced: the old wording said secrets were excluded
+  "regardless of `.gitignore`", which implied `.gitignore` was honoured when it was not. The new
+  note states the real precedence (git rules, then `.artorignore`, then the non-negatable
+  excludes).
+- **"Describe what changed" step 2** now tells the agent to diff the paths
+  `--list-source --json` prints against the previous snapshot, not the whole tree, so gitignored
+  files never show up as changes; its secret list gains `.git-credentials`, `.pgpass`,
+  `.dev.vars` and `.docker/`.
+- **`publish --json` shape** documented with `usage` in SKILL.md and `commands/publish.md`.
+- **`artor usage`** (`references/org-admin.md`): bars on storage and views, a `builds:` row with
+  the org's static and live app build limits (labelled as an example: the real limits come from
+  the server for each org), and the `--json` object the CLI defines,
+  `{ plan, storage, seats, views, limits, org }`, with unknown server fields dropped and `limits`
+  `null` against an older server.
+- Plugin and marketplace `version` bumped to `0.23.0`.
+
+### Compatibility
+
+- Gitignored files that used to ride in the snapshot (and that `pull` restored) are no longer
+  uploaded as of artor-cli 0.28.0. Restore a specific one with a `!pattern` line in
+  `.artorignore`.
+
 ## [0.22.0] - 2026-09-26
 
 Mirrors **signed-in preview links** (artor-cli 0.27.0): `artor open --signed-in` lets an agent load a
