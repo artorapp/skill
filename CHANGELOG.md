@@ -24,11 +24,13 @@ account-resolution error messages below; an older CLI still only supports one st
     side by side. Logging in again as an account already held **refreshes its token and revokes
     the previous one on the server**, so a command still running elsewhere with the old token
     fails with `Token ... is no longer valid` and just needs a re-run.
-  - How a command resolves which stored account acts, mirroring the existing org resolution: a
-    linked folder narrows to whichever accounts are members of its org (one means used silently,
-    zero means a fail message, two or more means refused, asking for `--account <email>`); an
-    unlinked folder with no `--org` falls back to a lone stored account or refuses and asks for
-    `--org` (and `--account` when more than one account holds that org).
+  - How a command resolves which stored account and org act: `--org` wins, else the linked
+    folder's org, else (unlinked) the only org your accounts hold, else a picker on a terminal or
+    a refusal asking for `--org` unattended (`artor org use` only pre-selects the picker row).
+    Within a resolved org, a linked folder narrows to whichever accounts are members of its org
+    (one means used silently, zero means a fail message naming the folder's org, two or more
+    means a remembered per-project choice if there is one, else a picker on a terminal, else
+    refused asking for `--account <email>`).
   - The explicit instruction for agents: in a non-interactive/scripted run inside an **unlinked**
     folder, always pass `--org <slug>`; add `--account <email>` only when the CLI's own refusal
     message says several accounts could act, never add `--account` speculatively, and never guess
@@ -68,16 +70,45 @@ account-resolution error messages below; an older CLI still only supports one st
   `artor account list [--json]`.
 - **"CLI itself" section**: documents that the CLI now keeps an installed skill fresh
   automatically. The native plugin install (`artor install-claude-plugin`) **auto-updates by
-  default** now (`skillAutoUpdate`/`ARTOR_SKILL_AUTO_UPDATE`, opt-out, never in CI, never on a
-  blind/undetected install), while the `npx skills` route for every other agent stays nag-only
-  since it can't apply the update itself. Calls out that the skill file itself may therefore
-  change between sessions.
-- **`artor/references/troubleshooting.md`**: eight new symptom rows quoting the CLI's exact
+  default** now, on an interactive terminal only (never under `--json`, so a scripted/agent run
+  always gets the nag instead); opt out with `artor update --off`, `ARTOR_SKILL_AUTO_UPDATE=0`, or
+  `ARTOR_NO_AUTOUPDATE` (also always off in CI). The `npx skills` route for every other agent stays
+  nag-only since it can't apply the update itself. Calls out that the skill file itself may
+  therefore change between sessions.
+- **`artor/references/troubleshooting.md`**: 15 new symptom rows quoting the CLI's exact
   account-resolution and folder/org-conflict messages verbatim: ambiguous-account, ambiguous-org,
-  unknown `--account` value, no stored account in the folder's org, the `--org`-disagrees-with-folder
-  refusal (both the general and the `init`-specific wording), plus the two `artor account list`
-  per-row states (`- token now signs in as a different account: ...` and the
-  unreachable/HTTP-error suffix).
+  unknown `--account` value, no stored account in the folder's org (both the generic and the
+  `--account`-named forms), the `--org`-disagrees-with-folder refusal (the general, the ambiguous-
+  ref, and the `init`-specific wording), the unidentified-login `--account` message, `artor
+  logout`'s own ambiguity and manual-revoke lines, and four `artor account list` per-row states
+  (`- token now signs in as a different account: ...`, `- token no longer valid: ...`, and the
+  unreachable/HTTP-error suffixes).
+
+### Changed
+
+- **Corrected several stale claims found on review** (none of them shipped before this release,
+  all caught before the branch was ever pushed):
+  - `artor logout` was described as never revoking the token server-side; it does, and only falls
+    back to "revoke it in Settings > CLI tokens" when the server-side call itself fails.
+  - `artor dev` was described as clearing every stored login and default org on each switch; logins
+    and default orgs are stored **per server**, so switching (on or off) keeps them and switching
+    back finds them exactly as left.
+  - The org-resolution chain was described as "linked folder → saved default → token org"; the
+    actual order is `--org` → linked folder org → (unlinked) the only org your accounts hold, else
+    a picker on a terminal or a refusal asking for `--org` unattended, with `artor org use` only
+    pre-selecting the picker row. Fixed everywhere it was stated: "First check", the `artor trash`
+    note, `references/org-admin.md`, and two troubleshooting rows (one of which also named the
+    now-refused `artor link --org <ref> <project> --force` form; replaced with `artor unlink
+    --link-only` then `artor link <project> --org <slug>`).
+  - "To change organization, run `artor org use`" was wrong for `env`/`mock`, which always act on
+    the linked folder's org regardless of the saved default; replaced with the accurate
+    re-link instructions in `SKILL.md` and `references/org-admin.md`.
+  - An agent-safety bullet read as license to add `--account`/`--org` proactively; reworded to
+    pass them only with values the user gave, and to ask the user (never guess or pick from a
+    listing) when the CLI refuses with `NEED_ACCOUNT`/`NEED_ORG`.
+  - Documented `status --json`'s `accountAmbiguous`/`accountMismatch`/`orgNotFound`/
+    `orgChoiceRequired` fields, and that only commands which resolve an account or org print the
+    stderr target line (`login`/`logout`/`account list`/`dev` do not).
 
 ## [0.23.2] - 2026-09-26
 

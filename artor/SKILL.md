@@ -33,16 +33,20 @@ than paraphrasing.
   account".** `artor login` ADDS an account rather than replacing one - run it again signed in as a
   second email and both are kept. Every command then resolves **which stored account acts** the
   same way it resolves the org: a linked folder's org picks whichever of your accounts is a member
-  of it; with only one such account there is nothing to ask. **Never guess which account is acting
-  - read `status`/`whoami`'s `account` field** (or the `-> org · email · …` line the CLI prints to
-  **stderr** before it acts) rather than assuming the most-recently-logged-in one.
-- **Two or more of your accounts can hold the same org.** Then the CLI cannot pick for you and
-  fails asking for `--account <email>` - see "Multiple logins" below for exactly when to add it.
+  of it; with only one such account there is nothing to ask.
+  - **Two or more of your accounts can hold the same org.** Then the CLI cannot pick for you and
+    fails asking for `--account <email>` - see "Multiple logins" below for exactly when to add it.
+  - **Never guess which account is acting: read `target.account` in `status --json`/`whoami
+    --json`** (`status` also has a top-level `account`), or the `-> org · email · …` line the CLI
+    prints to **stderr** before it acts - never assume the most-recently-logged-in account is the
+    one that acted.
 - **Never guess the org - read it.** Both commands report the **active** org: the one commands
-  actually target, resolved as **linked folder org → saved default (`artor org use`) → the resolved
-  account's home org**. `--json` on either adds `activeOrg`, `role`, `homeOrgMismatch` and
-  `orgsUnavailable`; read those fields instead of inferring an org from a project slug or a past
-  command. The **home** org is identity only, never the operation target, and is shown only when it
+  actually target, resolved as **`--org` → linked folder org → (unlinked) the only org your
+  accounts hold, else a picker on a terminal / a refusal asking for `--org` unattended**;
+  `artor org use` only pre-selects the picker row. `--json` on either adds `activeOrg`, `role`,
+  `homeOrgMismatch` and `orgsUnavailable`; read those fields instead of inferring an org from a
+  project slug or a past command. The **home** org is identity only, never the operation target,
+  and is shown only when it
   differs (`homeOrgMismatch: true`) - say so plainly rather than reporting two orgs as a
   contradiction. `orgsUnavailable: true` means the membership listing did not answer, so the org is
   **unknown**, not missing - don't tell the user they lost a membership, and don't suggest
@@ -84,23 +88,24 @@ global "active account" - **the account follows the folder**, exactly like the o
   previous one on the server** - a command still running elsewhere with that old token then fails
   with `Token ... is no longer valid` and just needs re-running.
 - **How a command picks which account acts.** For a linked folder, the CLI narrows to whichever of
-  your stored accounts is a **member of that folder's org**: one candidate → used with nothing to
-  ask; zero candidates → a fail message naming the folder's org (`account list` / `login` are the
-  fix); two or more candidates → the CLI **refuses and asks for `--account <email>`** (only then -
-  don't pass `--account` speculatively). For an unlinked folder with no `--org`, a lone stored
-  account is used outright; with several, a command that needs an org fails asking for `--org` (and
-  `--account` if more than one holds it); an account-only command (e.g. `artor account list`) with
-  several stored logins and no `--org` context picks interactively on a TTY and otherwise fails
-  asking for `--account`.
-- **You are an unattended run: never guess, pass `--org`/`--account` up front when you already know
-  them, and read the failure message when you don't.** In a **non-interactive/scripted run inside
-  an unlinked folder**, always pass `--org <slug>` explicitly (there is no folder to resolve it
-  from and no picker to fall back on); add `--account <email>` too whenever more than one of your
-  stored accounts is a member of that org - the CLI's own refusal message
-  (`Several of your accounts could act here. Pass --account <email>`) names exactly when that is
-  necessary, so trust it rather than adding the flag everywhere. `--account` takes an email
-  (case-insensitive) or the account's user id, and works as a **global flag on every command**, not
-  only `login`/`logout`/`account list`.
+  your stored accounts is a **member of that folder's org**: one candidate is used with nothing to
+  ask; zero candidates fails with a message naming the folder's org (`This folder belongs to an
+  org none of your logged-in accounts is in…`, or, with `--account <email>` given, `<email> is not
+  a member of this folder's org. Run 'artor account list'.`); two or more candidates use a
+  remembered choice for this project if there is one, else pick interactively on a terminal
+  (which remembers the choice), else fail with `NEED_ACCOUNT` (`Several of your accounts could act
+  here. Pass --account <email>...`) - only then does an agent pass `--account`, never
+  speculatively. For an unlinked folder with no `--org`, one account holding exactly one org is
+  used outright; anything else asks on a terminal and, unattended, fails with `NEED_ORG`. An
+  account-only command (`artor whoami`, `artor org list`) with several logins picks on a terminal
+  and otherwise fails asking for `--account`. (`artor account list` is local and never picks.)
+- **You are an unattended run: pass `--org`/`--account` only with values the user gave you or the
+  linked folder already implies.** In a **non-interactive/scripted run inside an unlinked
+  folder**, pass `--org <slug>` explicitly when the user named an org (there is no folder to
+  resolve it from and no picker to fall back on). When the CLI refuses with `NEED_ACCOUNT` /
+  `NEED_ORG`, **ask the user** which one; never pick an entry from `artor account list`/
+  `artor org list` yourself. `--account` takes an email (case-insensitive) or the account's user
+  id, and works as a **global flag on every command**, not only `login`/`logout`/`account list`.
 - **A `--org` that disagrees with the linked folder is refused, never silently followed or
   silently ignored.** Inside a linked folder, `--org <other>` fails with a message naming the
   folder's actual org and the two ways to proceed: `artor unlink --link-only` then
@@ -110,12 +115,16 @@ global "active account" - **the account follows the folder**, exactly like the o
   project, it doesn't move the existing one), and instead says to run `init` from a folder outside
   the linked one, unlink first, or drop `--org`. `--org` that merely repeats the folder's own org is
   never a conflict, even when it also narrows which account can act.
-- **Confirm who/where a command actually acted - don't assume.** Every command prints a
-  `-> org · email · space / folder / project` line to **stderr** before it acts (never stdout, so it
-  never pollutes `--json`); read it, or read the `account`/`target` field on a `--json` object
+- **Confirm who/where a command actually acted - don't assume.** Every command that resolves an
+  account or org prints a `-> org · email · space / folder / project` line to **stderr** before it
+  acts (not `login`/`logout`/`account list`/`dev`, none of which resolve one), never stdout, so it
+  never pollutes `--json`; read it, or read the `account`/`target` field on a `--json` object
   payload (`status`, `whoami`, `init`, `publish`, ...). **List `--json` payloads stay bare arrays
-  and never carry a `target`** (spec choice - a list has no single "where"). Never infer the acting
-  account from which one you logged in most recently.
+  and never carry a `target`.** Never infer the acting account from which one you logged in most
+  recently. `status --json` also carries `accountAmbiguous`, `accountMismatch`, `orgNotFound`, and
+  `orgChoiceRequired` - each `true` means resolution stopped short of a `target` (an ambiguous
+  `--account`/`--org`, a mismatch, an unresolvable ref, or an unlinked folder with a choice still
+  to make); read those booleans instead of treating a missing `target` as a crash.
 - **`artor account list [--json]`** is the accounts inventory: every login stored for the current
   server, each token **re-verified live**, plus which one `thisFolder` marks (the one this
   directory's commands would use). Each row's `orgs` is that account's cached memberships. Read
@@ -234,7 +243,8 @@ Four rules hold across the whole CLI, so they are stated once here rather than r
 > whether a name is already taken in a Space the user cannot see.
 
 > **`artor trash` is org-aware now.** It resolves the org the same way `restore`/`rm` do
-> (`--org <ref>` → linked folder → saved default → token org) and names the org in its heading, so
+> (**`--org` → linked folder org → (unlinked) the only org your accounts hold, else a picker on a
+> terminal / a refusal asking for `--org` unattended**) and names the org in its heading, so
 > the listing and the `artor restore <ref>` you print next always look at the same tenant.
 > Previously it always fell back to the token's home org, which could list a **different** org's
 > trash than `restore` would search.
@@ -395,12 +405,14 @@ the **project + org merged** effective set; it takes no scope flags.
   **no** `curl | bash` install route in the CLI anymore. `artor update-skill [claude-plugin|skills]`
   refreshes an existing install. **The CLI also keeps an installed skill FRESH on its own now:**
   once a day it compares the installed skill version against the published one and, for the
-  native plugin install (`artor install-claude-plugin`), **auto-updates it by default**
-  (`skillAutoUpdate` / `ARTOR_SKILL_AUTO_UPDATE`, opt-out, never in CI, never on a blind/undetected
-  install - it only silently updates when it could positively confirm the install method). The
-  `npx skills` route (every other agent) still only nags with "Run `artor update`" since it can't
-  apply the update itself. Either way, expect the skill you're reading to occasionally update
-  itself between sessions - if behavior described here seems to have shifted, re-read the file
+  native plugin install (`artor install-claude-plugin`), **auto-updates it by default** on an
+  **interactive terminal only** (never under `--json`, so a scripted/agent run always gets the nag
+  instead), and only when it could positively confirm the install method. Opt out with
+  `artor update --off`, `ARTOR_SKILL_AUTO_UPDATE=0`, or `ARTOR_NO_AUTOUPDATE`; it's also always off
+  in CI. The `npx skills` route (every other agent) still only nags with "Run `artor update`"
+  since it can't apply the update itself. Either way, expect the skill you're reading to
+  occasionally update itself between sessions - if behavior described here seems to have shifted,
+  re-read the file
   rather than trusting stale context.
 - **`artor update`** self-updates the CLI (it detects how it was installed and runs the right
   package-manager command; never silent). Since 0.16.0 the CLI also **keeps itself current
@@ -414,10 +426,9 @@ the **project + org merged** effective set; it takes no scope flags.
   The reverse mismatch has its own honest error: "This server does not support the current
   publish protocol" means the **server** is older than the CLI — ask the Artor operator to
   update the server; no CLI action fixes it.
-- **`artor dev`** retargets the CLI at a non-prod dashboard for local development. Turning it on
-  **or** off **clears the stored token + default org** (a token is environment-bound), so you must
-  `artor login` again after every switch. `artor dev off` restores production. **Never run it in a
-  normal designer workflow** — it will log you out of prod.
+- **`artor dev`** retargets the CLI at a non-prod dashboard. Logins and default orgs are stored
+  per server, so switching (on or off) keeps them, and switching back finds them as left.
+  **Never run it in a normal designer workflow** - it points every command at a different server.
 
 ## Slide decks (a second project kind)
 
@@ -508,7 +519,9 @@ works identically; a deck is just a project whose `kind` is `"slides"` instead o
   seconds**, for that one version's preview host; opening it gives that browser **one hour** of
   member access to that version only. Rules:
   - Access ends after **one hour**, or at once if the CLI token is revoked in Settings > CLI
-    tokens. `artor logout` only forgets the token locally and does **not** revoke it.
+    tokens. `artor logout` revokes the token on the server (ending this access) before
+    forgetting it; if it prints `Couldn't revoke on the server; revoke it in Settings > CLI
+    tokens.`, the token is still live, so tell the user to revoke it there.
   - Navigate to `authUrl` **promptly (within 60s) and exactly once**; mint a fresh one if it
     expired or was used.
   - **Never paste `authUrl` into chat, a PR, an issue, a log, or anything that unfurls links** -
@@ -1008,8 +1021,8 @@ Report the exact version number and URL the CLI returns; do not invent them.
   serving production traffic — use a real host (Vercel, etc.) for that.
 - **Not a git replacement.** `pull`/`remix` fetch a version's source snapshot; they don't replace
   version control. `.artor` never travels in source tarballs.
-- **`artor dev` is never part of a normal workflow** — it's for developing against a non-prod Artor
-  dashboard and logs you out of prod on every switch.
+- **`artor dev` is never part of a normal workflow** - it's for developing against a non-prod Artor
+  dashboard.
 
 ## Reference files (read on demand)
 
