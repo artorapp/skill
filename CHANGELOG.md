@@ -15,25 +15,31 @@ Mirrors **static build size by plan**, the **usage bars** and the **pricing page
   about prices, what a plan includes or "will this fit on my plan", the agent fetches that page
   and answers from it, never from memory or from this file.
   - Pooled limits explained: storage, views and prototypes running at once grow with each extra
-    publisher seat on paid plans; build size and memory do not.
+    publisher seat on Pro and Team (Enterprise is by contract); build size and memory never do.
   - Real per-org numbers (custom limits) come from `artor usage` (owner/admin).
   - Only an org owner or admin upgrades (Settings, Billing); anyone else asks an org admin;
     Enterprise is by contact.
 - **Usage block after a publish.**
   - Fill bars for this build (against its plan limit) and the saved source (against 50 MB), on
-    an interactive terminal or anywhere once one reaches 75%.
-  - Storage and public-link views (last 30 days) appear only at 75% of the org's limit, each with
-    one warning line naming the next step.
-  - Admins see exact numbers and the action; other publishers see a percentage and "Ask an org
-    admin to ...". The agent relays the line as written and never invents an upgrade.
-  - Views are a notice (they never block a publish); storage at 100% stops new publishes.
-  - `--json`: no bars, warnings on stderr, a `usage` object in the result (`null` against an
-    older server).
-- **Static build over its limit:** the 413 names the limit and the step (upgrade, add seats, or
-  contact support); the agent points the user there and to the pricing page.
+    an interactive terminal or anywhere once one reaches 75%. Every publisher sees these sizes.
+  - The org's storage and public-link views (last 30 days) appear only at 75% of the org's
+    limit, each with one warning line naming the next step the server chose: upgrade the plan
+    (Settings, Billing), add publisher seats (Settings, Team), or contact support.
+  - Admins see exact numbers and the per-seat amount; other publishers see a percentage, no
+    amounts, and "Ask an org admin to ...". The upgrade step is not offered while self-serve
+    upgrades are paused. The agent relays the line as written and never invents an upgrade.
+  - Views are a notice (they never block a publish); storage at 100% stops new publishes, and
+    that refusal shows exact numbers only to an admin.
+  - Near-limit warnings go to stderr. `--json`: no bars, and a `usage` object in the result
+    (`null` against an older server; the per-seat increment is `perSeat`).
+- **`publish --json` shape** documented with `usage` in SKILL.md and `commands/publish.md`.
+- **Build over its limit (static or live app):** the 413 names the limit and the step (upgrade
+  the plan, or contact support; extra seats never raise a build limit); the agent points the
+  user there and to the pricing page.
 - **Source warning now at 75% of the 50 MB cap** (about 37.5 MB) instead of 25 MB, with the
   percent in the line.
-- **`artor usage`** gains bars and the org's static and live app build limits.
+- **`artor usage`** gains bars on storage and views, a `builds:` row with the org's static and
+  live app build limits, and an optional `limits: { staticBundleMb, nodeBundleMb }` in `--json`.
 
 
 Mirrors the **source snapshot ignore rules** and the **50 MB source cap** (artor-cli 0.27.0).

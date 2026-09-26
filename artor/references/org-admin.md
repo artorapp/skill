@@ -230,7 +230,13 @@ artor usage [--org <ref>] [--json]
 ```
 
 - Reports the **plan**, **storage** used (with the age of the reading), **publisher seats**, and
-  **public-link views** over the last 30 days.
+  **public-link views** over the last 30 days. Storage and views carry a fill bar with their
+  percentage (none when the cap is unlimited or storage was never measured).
+- A **`builds:`** row (artor-cli 0.28.0+) gives the max size of ONE publish: the org's static and
+  live app build limits (`static 200 MB, live app 1,000 MB`). No bar: it is a per-publish
+  limit, not a running total. Extra publisher seats never raise it.
+- `--json` adds an optional `limits: { staticBundleMb, nodeBundleMb }` (MB); an older server
+  omits it, so treat it as absent rather than as zero.
 - Org resolution: `--org <ref>` wins (a present-but-empty value is refused, never read as absent),
   else the **linked folder's** org, else the saved default / token org. `--json` names the org too.
 - **Read each cap honestly, they are not interchangeable:** a `null` storage or views cap means

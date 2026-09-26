@@ -14,8 +14,9 @@ workflows you'll drive most. **Prefer `--json` on read commands** (artor-cli ≥
 `folder list`, `space list`, `env list`, `mock list`, `skill list`, `logs`, and `open` (prints
 `{ "url": … }` **without** launching a browser - ideal for grabbing the preview URL headlessly).
 It prints the payload to stdout and suppresses the human rendering. Two **write** commands emit
-`--json` too: `artor publish` (one object - `version`, `url`, `aliases`, `artifactType`, plus
-`replaced` when the server reports it - with every progress line on stderr) and `artor init`
+`--json` too: `artor publish` (one object - `version`, `url`, `aliases`, `artifactType`, `usage`
+(`null` against an older server), plus `replaced` when the server reports it - with every
+progress line on stderr) and `artor init`
 (`projectId`, `slug`, `name`, `orgId`, plus `spaceId`/`folderId` when it chose them). Under
 `--json` those two never prompt: it is a scripted run by contract, so a multi-org `init` needs
 `--org`, and a `next.config` patch or a mock-drift conflict fails loud asking for `--yes` /
@@ -224,24 +225,28 @@ so rather than showing `0`. Details: `references/org-admin.md`.
 what a plan includes, or "will this fit on my plan" (storage, views, prototypes running at once,
 static and live app build size, memory), fetch that page and answer from it. Never quote prices or
 limits from memory or from this file: they change, and that page is kept in step with the website.
-Storage, views and prototypes running at once grow with each extra publisher seat on paid plans;
-build size and memory do not. An org's actual limits can differ (custom limits): `artor usage`
+Storage, views and prototypes running at once grow with each extra publisher seat on Pro and
+Team (Enterprise limits are set by contract); build size and memory never do. An org's actual limits can differ (custom limits): `artor usage`
 (owner/admin) shows the real numbers. Only an org owner or admin can upgrade (Settings, Billing);
 anyone else should ask an org admin. Enterprise is by contact, not self-serve.
 
 **Usage block after a publish (artor-cli 0.28.0+).** At the end of a publish the CLI prints fill
 bars: this build against its size limit and the saved source against 50 MB (on an interactive
-terminal, or anywhere once one reaches 75%), plus storage and public-link views (last 30 days)
-only once they reach 75% of the organization's limit, each with ONE `⚠` line naming the next
-step. Owners/admins see exact numbers and "You can upgrade the plan ... in Settings, Billing";
-other publishers see only the percentage and "Ask an org admin to ...". Relay that line to the
+terminal, or anywhere once one reaches 75%), plus the org's storage and public-link views (last
+30 days) only once they reach 75% of the organization's limit, each with ONE `⚠` line naming the
+next step. Every publisher sees the build and source sizes; storage and views show exact numbers
+to owners/admins only, a percentage to anyone else. The step comes from the server: upgrade the
+plan (Settings, Billing), add publisher seats (Settings, Team), or contact support. Admins get the
+per-seat amount ("each adds ..."); other publishers get no amounts, only "Ask an org admin to ...".
+While self-serve upgrades are paused the upgrade step is not offered at all. Relay that line to the
 user as written; do not invent a fix, and do not suggest an upgrade the line does not offer. A
-views line is a notice (views never block a publish); storage at 100% stops new publishes.
-Under `--json` there are no bars: warnings go to stderr and the result carries a `usage` object
-(`null` against an older server). `artor usage` (owner/admin) shows the same bars plus the
-org's static and live app build limits. A static build over its limit gets a 413 naming the
-limit and the step (upgrade, add seats, or contact support); point the user to that step and to
-https://artor.app/pricing.md.
+views line is a notice (views never block a publish); storage at 100% stops new publishes (the
+refusal shows exact numbers only to an admin). Near-limit warnings go to stderr. Under `--json`
+there are no bars and the result carries a `usage` object (`null` against an older server; each
+metric's per-seat increment is `perSeat`). `artor usage` (owner/admin) shows the same bars plus
+the org's static and live app build limits. A build over its limit (static or live app) gets a
+413 naming the limit and the step: upgrade the plan, or contact support. Extra seats never raise
+a build limit. Point the user to that step and to https://artor.app/pricing.md.
 
 **Spaces - the access wall.** `artor space` manages who in the org can reach a
 set of prototypes (**Org → Space → Folder → Prototype**); folders are cosmetic *within* a Space.
@@ -354,8 +359,8 @@ works identically; a deck is just a project whose `kind` is `"slides"` instead o
   version at `-V`/`--version`. When both are passed, `--alias` wins and the warning says so. Use
   `--alias` in anything you write.
 - **`artor publish --json` is the agent-facing form.** It emits exactly one JSON object on stdout:
-  `{ version, url, aliases, artifactType }`, plus `replaced` when the server reports an
-  overwrite. It routes every progress line, warning, smoke-test result, and the build/install
+  `{ version, url, aliases, artifactType, usage }` (`usage` is `null` against an older
+  server), plus `replaced` when the server reports an overwrite. It routes every progress line, warning, smoke-test result, and the build/install
   subprocess transcript to stderr, so the payload stays parseable. It **never prompts**: the
   first-publish confirm and the web-sdk offer take their informational path, while a `next.config`
   patch fails loud asking for `--yes` and a real mock conflict fails loud asking for
