@@ -28,6 +28,8 @@ cannot infer from the old surface. **Requires artor-cli 0.27.0+.**
   - What `authUrl` is: a **single-use** signed-in link, valid **60 seconds**, scoped to one
     version's preview host; opening it gives that browser **one hour** of member access to that
     version only.
+  - How access ends: after one hour, or at once if the CLI token is revoked in Settings → CLI
+    tokens; `artor logout` only forgets the token locally and does not revoke it.
   - Handling rules: open it promptly (within 60s) and exactly once, mint a fresh one if it expired
     or was used; **never** paste it into chat, a PR, an issue, a log, or anything that unfurls
     links (an unfurler consumes it); plain `artor open --json` stays the shareable URL and never
@@ -45,8 +47,8 @@ cannot infer from the old surface. **Requires artor-cli 0.27.0+.**
 ### Changed
 
 - **`artor/SKILL.md`, "CLI conventions", flag-spelling rule**: since artor-cli 0.27.0 **any** value
-  flag followed by another `--flag` or by nothing fails before acting with `--x needs a value.`
-  (exit 1), where older CLIs sometimes silently ran with a default (the org space for `--space`,
+  flag followed by another `--flag` or by nothing fails before acting (exit 1), usually with
+  `--x needs a value.` (`--org`, `--comments`, `space rm --move-to`, `env`/`mock` `--scope`/`--version` and `-m`/`--message` keep their own message), where older CLIs sometimes silently ran with a default (the org space for `--space`,
   latest for `--ref`, 7 days for `--days`). A free-text value that really starts with `--` uses the
   `=` form (`--message=--hotfix`, `--desc=--beta`).
 - **Manifests**: `plugin.json` and `marketplace.json` bumped to `0.22.0`.
