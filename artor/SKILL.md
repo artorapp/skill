@@ -158,7 +158,11 @@ global "active account" - **the account follows the folder**, exactly like the o
   your orgs. To move this folder to another org, run "artor unlink --link-only" then "artor link
   <project> --org <slug>". Outside a linked folder, pass "--org <slug>".` Relay it as written -
   the three remedies cover every case (list orgs, re-point a linked folder, or pass `--org` in an
-  unlinked one).
+  unlinked one). **Exception: on a not-yet-identified legacy login** (a parked token this machine
+  hasn't identified yet), `whoami`/`status` send no org header at all unless `--org` names one -
+  the folder's or saved-default org was never checked against an identified account, so sending it
+  could turn a harmless identity question into a false membership 403. An explicit `--org` on that
+  path is still sent, since the user named it directly.
 - **`artor account list [--json]`** is the accounts inventory: every login stored for the current
   server, each token **re-verified live**, plus which one `thisFolder` marks (the one this
   directory's commands would use). Each row's `orgs` is that account's cached memberships. Read
@@ -178,14 +182,17 @@ global "active account" - **the account follows the folder**, exactly like the o
     verdict on the token.
   A **pending** row (`{ kind: "pending", apiUrl, reason?, httpStatus? }`) is a login this machine
   hasn't identified yet (an older CLI's token, or one just approved) - never printed with a token.
-  `reason` is one of `unreachable`, `suspended`, `deletion_pending`, or `error` (with `httpStatus`),
-  and is absent when it simply wasn't checked this run. Human output groups pending logins by
-  reason with what to do for each: unreachable says it will identify itself automatically once the
-  server answers and to re-run `artor account list` then; `suspended`/`deletion_pending` print the
-  same account-state sentence as an identified account's row (contact an admin/support, or sign in
-  with a password and choose Cancel deletion & sign in); `error` says to re-run `artor account
-  list` later; with no reason it just says the count is not identified yet. Never tell the user a
-  pending login is broken - most reasons mean "try again," not "fix something."
+  `reason` is one of `unreachable`, `suspended`, `deletion_pending`, `error` (with `httpStatus`), or
+  `unsaved`, and is absent when it simply wasn't checked this run. Human output groups pending
+  logins by reason with what to do for each: unreachable says it will identify itself automatically
+  once the server answers and to re-run `artor account list` then; `suspended`/`deletion_pending`
+  print the same account-state sentence as an identified account's row (contact an admin/support,
+  or sign in with a password and choose Cancel deletion & sign in); `error` says to re-run `artor
+  account list` later; `unsaved` means the server recognized the login but the identify couldn't be
+  saved (another `artor` command likely held the account store) - re-run `artor account list`,
+  nothing is wrong with the login itself; with no reason it just says the count is not identified
+  yet. Never tell the user a pending login is broken - most reasons mean "try again," not "fix
+  something."
 - **`artor logout [--account <email>] [--all]`** revokes the token **on the server** before
   forgetting it locally (this also ends any `artor open --signed-in` access minted from it). One
   stored account needs no flag; several need `--account <email>` or `--all` (or an interactive

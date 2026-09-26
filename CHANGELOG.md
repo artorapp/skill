@@ -181,6 +181,19 @@ account-resolution error messages below; an older CLI still only supports one st
     list" to see your orgs. To move this folder to another org, run "artor unlink --link-only"
     then "artor link <project> --org <slug>". Outside a linked folder, pass "--org <slug>".`
     Documented as its own `SKILL.md` bullet and troubleshooting row.
+- **One more sync pass, verified against `cli/src` at HEAD c8ed21d7:**
+  - **A fifth `account list` pending reason, `unsaved`**: the server recognized a not-yet-identified
+    login, but the local save failed, usually because another `artor` command held the account
+    store's lock at the same moment. Exact line: ``1 login not identified yet: the server
+    recognized it, but saving that failed (another artor command may be holding the account store).
+    Run `artor account list` again.`` Documented alongside the other four reasons in `SKILL.md`,
+    plus a new troubleshooting row. Nothing is wrong with the login itself - just re-run the
+    command.
+  - **On a not-yet-identified legacy login, `whoami`/`status` send NO org header at all**, unless
+    `--org` names one explicitly (matches artor-cli 0.27's behavior) - the folder's or saved-default
+    org was never checked against an identified account, so sending it could turn a harmless
+    identity call into a false membership 403. Added as an exception to the "sends the resolved
+    org" bullet in `SKILL.md`.
 
 ## [0.23.2] - 2026-09-26
 
