@@ -419,7 +419,7 @@ works identically; a deck is just a project whose `kind` is `"slides"` instead o
   `{ "url", "authUrl", "expiresAt" }`: `authUrl` is a **single-use** signed-in link, valid **60
   seconds**, for that one version's preview host; opening it gives that browser **one hour** of
   member access to that version only. Rules:
-  - Access ends after **one hour**, or at once if the CLI token is revoked in Settings → CLI
+  - Access ends after **one hour**, or at once if the CLI token is revoked in Settings > CLI
     tokens. `artor logout` only forgets the token locally and does **not** revoke it.
   - Navigate to `authUrl` **promptly (within 60s) and exactly once**; mint a fresh one if it
     expired or was used.
@@ -508,10 +508,11 @@ works identically; a deck is just a project whose `kind` is `"slides"` instead o
   files against the linked project's server-effective mock bindings. A name present on only one
   side is never a conflict (it just publishes as-is / survives untouched); a name present on
   **both** sides with **different** content is a real conflict, resolved per-name to "keep local"
-  or "use server": `--mocks=local` / `--mocks=server` answers every conflict the same way with no
-  prompt; on a TTY with no flag you're prompted per conflict; **off a TTY with no flag and a real
-  conflict, publish fails loud asking for `--mocks=`** — there's no safe silent default, since
-  either side could clobber a real edit. No local `mocks/` dir at all skips the check entirely.
+  or "use server": `--mocks=local` / `--mocks=server` (artor-cli 0.28.0+ also takes
+  `--mocks local|server`) answers every conflict the same way with no prompt; on a TTY with no
+  flag you're prompted per conflict; **off a TTY with no flag and a real conflict, publish fails
+  loud asking for `--mocks=`**; there's no safe silent default, since either side could clobber a
+  real edit. No local `mocks/` dir at all skips the check entirely.
 - **Skipped-bundled-mock report.** If a `mocks/*.json` file is dropped from the version snapshot
   at publish time (too large, or not valid JSON), `artor publish` now prints a warning line naming
   the skipped mocks and why. The version still serves that mock via the bundled fallback, so it is

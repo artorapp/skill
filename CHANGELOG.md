@@ -7,6 +7,15 @@ uses pre-1.0 (0.x) semver — new user-visible capability bumps MINOR, fixes/doc
 After a version bump, users pull it with `claude plugin marketplace update artor && claude plugin
 update artor@artor` (update only fires on a version bump).
 
+## [0.23.1] - 2026-09-26
+
+Docs-only PATCH, keeping the skill in step with the CLI and the website.
+
+- **Settings paths use `>`.** "Settings > CLI tokens" now matches the CLI's own advice lines
+  ("Settings > Billing", "Settings > Team") and the website.
+- **`--mocks` takes the space form.** The mock drift gate notes that artor-cli 0.28.0+ also
+  accepts `--mocks local|server`, not only `--mocks=local|server`.
+
 ## [0.23.0] - 2026-09-26
 
 Mirrors artor-cli **0.28.0**, which ships two features together: the **source snapshot ignore
