@@ -26,18 +26,28 @@ than paraphrasing.
 
 ## First check
 
-- `artor status` - is this dir linked, who am I, and **which org will commands actually target**?
+- `artor status` - is this dir linked, who am I, and **which org (and which account) will commands
+  actually target**?
 - `artor whoami` - the signed-in user and the same **active org**, with your role (else `artor login`).
+- **The machine can hold several logins; the account follows the folder, never a global "active
+  account".** `artor login` ADDS an account rather than replacing one - run it again signed in as a
+  second email and both are kept. Every command then resolves **which stored account acts** the
+  same way it resolves the org: a linked folder's org picks whichever of your accounts is a member
+  of it; with only one such account there is nothing to ask. **Never guess which account is acting
+  - read `status`/`whoami`'s `account` field** (or the `-> org · email · …` line the CLI prints to
+  **stderr** before it acts) rather than assuming the most-recently-logged-in one.
+- **Two or more of your accounts can hold the same org.** Then the CLI cannot pick for you and
+  fails asking for `--account <email>` - see "Multiple logins" below for exactly when to add it.
 - **Never guess the org - read it.** Both commands report the **active** org: the one commands
-  actually target, resolved as **linked folder org → saved default (`artor org use`) → the token's
-  home org**. `--json` on either adds `activeOrg`, `role`, `homeOrgMismatch` and `orgsUnavailable`;
-  read those fields instead of inferring an org from a project slug or a past command. The token's
-  **home** org is identity only, never the operation target, and is shown only when it differs
-  (`homeOrgMismatch: true`) - say so plainly rather than reporting two orgs as a contradiction.
-  `orgsUnavailable: true` means the membership listing did not answer, so the org is **unknown**,
-  not missing - don't tell the user they lost a membership, and don't suggest `artor link`.
-  An `activeOrg` of `null` with `orgsUnavailable: false` is a stale `.artor` or a revoked
-  membership; the CLI prints the recovery step, relay it.
+  actually target, resolved as **linked folder org → saved default (`artor org use`) → the resolved
+  account's home org**. `--json` on either adds `activeOrg`, `role`, `homeOrgMismatch` and
+  `orgsUnavailable`; read those fields instead of inferring an org from a project slug or a past
+  command. The **home** org is identity only, never the operation target, and is shown only when it
+  differs (`homeOrgMismatch: true`) - say so plainly rather than reporting two orgs as a
+  contradiction. `orgsUnavailable: true` means the membership listing did not answer, so the org is
+  **unknown**, not missing - don't tell the user they lost a membership, and don't suggest
+  `artor link`. An `activeOrg` of `null` with `orgsUnavailable: false` is a stale `.artor` or a
+  revoked membership; the CLI prints the recovery step, relay it.
 - A project is linked once via `.artor/project.json`. If absent, run `artor init` (to create a new
   project) or `artor link` (to attach to an existing one — a teammate who `git clone`d an
   already-linked repo runs `artor link`; the CLI takes no position on whether `.artor/project.json`
@@ -62,6 +72,72 @@ framework dependency (e.g. `next`), **not** the workspace root. The `.artor` lin
   `init`/`publish` there.
 - **Then `cd` into the target app** (e.g. `cd apps/web`) and run `artor init`, then `artor publish`.
 - If the user hasn't said which app, ask which subfolder to publish rather than guessing.
+
+## Multiple logins (accounts)
+
+`~/.artor/accounts.json` can hold **several** logins on one machine, one per email; there is no
+global "active account" - **the account follows the folder**, exactly like the org does.
+
+- **`artor login` ADDS or REFRESHES an account, it never signs you out of another one.** Run it
+  again while signed in as a different email in the browser and both accounts are kept side by
+  side. Logging in again as an account you already have refreshes its token and **revokes the
+  previous one on the server** - a command still running elsewhere with that old token then fails
+  with `Token ... is no longer valid` and just needs re-running.
+- **How a command picks which account acts.** For a linked folder, the CLI narrows to whichever of
+  your stored accounts is a **member of that folder's org**: one candidate → used with nothing to
+  ask; zero candidates → a fail message naming the folder's org (`account list` / `login` are the
+  fix); two or more candidates → the CLI **refuses and asks for `--account <email>`** (only then -
+  don't pass `--account` speculatively). For an unlinked folder with no `--org`, a lone stored
+  account is used outright; with several, a command that needs an org fails asking for `--org` (and
+  `--account` if more than one holds it); an account-only command (e.g. `artor account list`) with
+  several stored logins and no `--org` context picks interactively on a TTY and otherwise fails
+  asking for `--account`.
+- **You are an unattended run: never guess, pass `--org`/`--account` up front when you already know
+  them, and read the failure message when you don't.** In a **non-interactive/scripted run inside
+  an unlinked folder**, always pass `--org <slug>` explicitly (there is no folder to resolve it
+  from and no picker to fall back on); add `--account <email>` too whenever more than one of your
+  stored accounts is a member of that org - the CLI's own refusal message
+  (`Several of your accounts could act here. Pass --account <email>`) names exactly when that is
+  necessary, so trust it rather than adding the flag everywhere. `--account` takes an email
+  (case-insensitive) or the account's user id, and works as a **global flag on every command**, not
+  only `login`/`logout`/`account list`.
+- **A `--org` that disagrees with the linked folder is refused, never silently followed or
+  silently ignored.** Inside a linked folder, `--org <other>` fails with a message naming the
+  folder's actual org and the two ways to proceed: `artor unlink --link-only` then
+  `artor link <project> --org <slug>` to re-point the folder, or drop `--org` to act in the
+  folder's own org. `artor init --org <other>` inside an already-linked folder is refused the same
+  way but with **init's own wording** - it never suggests re-linking (init creates a brand-new
+  project, it doesn't move the existing one), and instead says to run `init` from a folder outside
+  the linked one, unlink first, or drop `--org`. `--org` that merely repeats the folder's own org is
+  never a conflict, even when it also narrows which account can act.
+- **Confirm who/where a command actually acted - don't assume.** Every command prints a
+  `-> org · email · space / folder / project` line to **stderr** before it acts (never stdout, so it
+  never pollutes `--json`); read it, or read the `account`/`target` field on a `--json` object
+  payload (`status`, `whoami`, `init`, `publish`, ...). **List `--json` payloads stay bare arrays
+  and never carry a `target`** (spec choice - a list has no single "where"). Never infer the acting
+  account from which one you logged in most recently.
+- **`artor account list [--json]`** is the accounts inventory: every login stored for the current
+  server, each token **re-verified live**, plus which one `thisFolder` marks (the one this
+  directory's commands would use). Each row's `orgs` is that account's cached memberships. Read
+  `status` per row and relay it honestly:
+  - `ok` - works fine, nothing to say.
+  - `invalid` - the token is dead (revoked, expired, or now answers as a different account). Tell
+    the user to run `artor login` again, signed in as that email.
+  - `suspended` - the account itself is suspended. **Stop**; tell the user to contact their
+    organization admin or Artor support. Signing in again cannot lift a suspension - don't loop
+    `artor login`.
+  - `deletion_pending` - the account is scheduled for deletion (`purgeAfter` in `--json`). Tell the
+    user to run `artor login`, sign in with their **password**, and choose **Cancel deletion & sign
+    in**; magic-link and social sign-in cannot restore it, and you cannot cancel it for them.
+  - `unreachable` - the verification call timed out or the server didn't answer; not a verdict on
+    the token, just "couldn't check right now."
+  - `error` - the check itself failed for another reason (`httpStatus` in `--json`); also not a
+    verdict on the token.
+- **`artor logout [--account <email>] [--all]`** revokes the token **on the server** before
+  forgetting it locally (this also ends any `artor open --signed-in` access minted from it). One
+  stored account needs no flag; several need `--account <email>` or `--all` (or an interactive
+  pick on a TTY - refused unattended). Preferences (auto-update, skill) and other servers'
+  logins (`artor dev`) are untouched.
 
 ## CLI conventions (help, refs, confirms, flags)
 
@@ -96,6 +172,9 @@ Four rules hold across the whole CLI, so they are stated once here rather than r
     must be exact too. As an agent you are an unattended run: **pass the exact id or full
     slug/name for anything destructive**, and use a partial only for reads and reversible writes
     (`restore`, `rename`, `remix`, `pull` without `--force`).
+  - **`--account <email>` is never part of this ladder - it is exact-only.** It matches an
+    account's user id exactly, or its email case-insensitively; there is no prefix/substring
+    fallback and no ambiguity to resolve, so pass the full email as `artor account list` prints it.
 - **Confirmations have one grammar.** `-y` / `--yes` anywhere in the arguments pre-approves and
   skips the prompt. **Declining exits `1`** with `✗ Cancelled.` on stderr - a non-zero exit after a
   destructive command may mean "the user said no", not "it broke", so read the message before
@@ -119,10 +198,11 @@ Four rules hold across the whole CLI, so they are stated once here rather than r
 
 | Goal                                  | Command                                             |
 | ------------------------------------- | --------------------------------------------------- |
-| Authorize this machine                | `artor login`                                       |
+| Authorize this machine (adds/refreshes an account) | `artor login`                          |
 | Who am I / active org + role          | `artor whoami [--json]`                             |
-| Is this dir linked + active org       | `artor status [--json]`                             |
-| Clear the stored token                | `artor logout`                                      |
+| Is this dir linked + active org + account | `artor status [--json]`                         |
+| Sign an account out (revokes server-side) | `artor logout [--account <email>] [--all]`      |
+| List logged-in accounts + token health | `artor account list [--json]`                      |
 | List / set your default org (2+ orgs) | `artor org list [--json]` / `artor org use [<ref>]` |
 | List the active org's members         | `artor org members`                                 |
 | Usage against the org's plan limits   | `artor usage [--org <ref>] [--json]` (owner/admin)  |
@@ -313,7 +393,15 @@ the **project + org merged** effective set; it takes no scope flags.
   Gemini, Copilot, OpenCode, …). `artor install-claude-plugin` installs the full Claude Code plugin
   (knowledge skill **and** slash commands). Bare `artor install` shows a picker on a TTY. There is
   **no** `curl | bash` install route in the CLI anymore. `artor update-skill [claude-plugin|skills]`
-  refreshes an existing install.
+  refreshes an existing install. **The CLI also keeps an installed skill FRESH on its own now:**
+  once a day it compares the installed skill version against the published one and, for the
+  native plugin install (`artor install-claude-plugin`), **auto-updates it by default**
+  (`skillAutoUpdate` / `ARTOR_SKILL_AUTO_UPDATE`, opt-out, never in CI, never on a blind/undetected
+  install - it only silently updates when it could positively confirm the install method). The
+  `npx skills` route (every other agent) still only nags with "Run `artor update`" since it can't
+  apply the update itself. Either way, expect the skill you're reading to occasionally update
+  itself between sessions - if behavior described here seems to have shifted, re-read the file
+  rather than trusting stale context.
 - **`artor update`** self-updates the CLI (it detects how it was installed and runs the right
   package-manager command; never silent). Since 0.16.0 the CLI also **keeps itself current
   automatically**: if a command fails with HTTP 426 (CLI below the server's floor), a global or

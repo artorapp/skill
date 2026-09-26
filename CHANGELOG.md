@@ -7,6 +7,78 @@ uses pre-1.0 (0.x) semver — new user-visible capability bumps MINOR, fixes/doc
 After a version bump, users pull it with `claude plugin marketplace update artor && claude plugin
 update artor@artor` (update only fires on a version bump).
 
+## [0.24.0] - 2026-09-26
+
+MINOR: teaches the skill about **multiple CLI logins**. The machine can now hold several stored
+accounts at once, and the account an Artor command acts as is resolved from the folder, mirroring
+how the org is already resolved from the folder, never from a single global "active account".
+**Requires artor-cli 0.28.0+** for `artor login`/`artor logout`/`artor account list` and the
+account-resolution error messages below; an older CLI still only supports one stored token.
+
+### Added
+
+- **`artor/SKILL.md`, new "Multiple logins (accounts)" section** (right after "Monorepos", before
+  "CLI conventions"):
+  - `artor login` **adds or refreshes** an account rather than replacing whichever one was
+    stored, running it again signed in as a different email in the browser keeps both accounts
+    side by side. Logging in again as an account already held **refreshes its token and revokes
+    the previous one on the server**, so a command still running elsewhere with the old token
+    fails with `Token ... is no longer valid` and just needs a re-run.
+  - How a command resolves which stored account acts, mirroring the existing org resolution: a
+    linked folder narrows to whichever accounts are members of its org (one means used silently,
+    zero means a fail message, two or more means refused, asking for `--account <email>`); an
+    unlinked folder with no `--org` falls back to a lone stored account or refuses and asks for
+    `--org` (and `--account` when more than one account holds that org).
+  - The explicit instruction for agents: in a non-interactive/scripted run inside an **unlinked**
+    folder, always pass `--org <slug>`; add `--account <email>` only when the CLI's own refusal
+    message says several accounts could act, never add `--account` speculatively, and never guess
+    which stored account is "the" one to use.
+  - **`--account` is a global flag** on every command (not only `login`/`logout`/`account list`),
+    takes an email (case-insensitive) or a user id, and is **exact-only**: it is never part of the
+    partial-ref matching ladder documented under "CLI conventions", so a prefix or substring never
+    matches it.
+  - **Confirming who/where a command acted**: every command prints a `-> org · email · space /
+    folder / project` line to **stderr** before it acts, and an object `--json` payload
+    (`status`, `whoami`, `init`, `publish`, ...) carries the same information as a `target`/
+    `account` field. List `--json` payloads (arrays) never carry a `target`, so read from an
+    object payload or the stderr line, never infer the acting account from login order.
+  - **`--org` that disagrees with a linked folder is refused**, never silently followed and never
+    silently ignored: the message names the folder's real org and offers `artor unlink
+    --link-only` then `artor link <project> --org <slug>` to re-point it, or dropping `--org`.
+    `artor init --org <other>` inside an already-linked folder gets **init's own wording** (it
+    never suggests re-linking, since init creates a new project rather than moving the existing
+    one): run it outside the linked folder, unlink first, or drop `--org`.
+  - **`artor account list [--json]`**: every login stored for the current server, each token
+    **re-verified live**, with the one `thisFolder` marks. Documents every `status` value
+    (`ok`, `invalid`, `suspended`, `deletion_pending`, `unreachable`, `error`) and exactly what to
+    tell the user for each. In particular, `suspended` means stop and point at an admin/support
+    (never loop `artor login`), and `deletion_pending` means sign in with a password and choose
+    **Cancel deletion & sign in** (magic-link/social sign-in cannot restore it, and the agent
+    cannot cancel the deletion on the user's behalf).
+  - **`artor logout [--account <email>] [--all]`**: revokes the chosen login(s) **on the server**
+    before forgetting them locally (also ending any `artor open --signed-in` access minted from
+    them); one stored account needs no flag, several need `--account`/`--all` or an interactive
+    pick. Preferences and other servers' logins (`artor dev`) are untouched.
+- **"First check" section** rewritten for the multi-account model: it now says explicitly that the
+  machine can hold several logins, that the account follows the folder exactly like the org does,
+  and to read `status`/`whoami`'s `account` field or the stderr target line rather than assuming
+  the most recently logged-in account is the one acting.
+- **Command reference, Auth & identity table**: `login` now reads "adds/refreshes an account";
+  `logout` shows its `[--account <email>] [--all]` flags; added a new row for
+  `artor account list [--json]`.
+- **"CLI itself" section**: documents that the CLI now keeps an installed skill fresh
+  automatically. The native plugin install (`artor install-claude-plugin`) **auto-updates by
+  default** now (`skillAutoUpdate`/`ARTOR_SKILL_AUTO_UPDATE`, opt-out, never in CI, never on a
+  blind/undetected install), while the `npx skills` route for every other agent stays nag-only
+  since it can't apply the update itself. Calls out that the skill file itself may therefore
+  change between sessions.
+- **`artor/references/troubleshooting.md`**: eight new symptom rows quoting the CLI's exact
+  account-resolution and folder/org-conflict messages verbatim: ambiguous-account, ambiguous-org,
+  unknown `--account` value, no stored account in the folder's org, the `--org`-disagrees-with-folder
+  refusal (both the general and the `init`-specific wording), plus the two `artor account list`
+  per-row states (`- token now signs in as a different account: ...` and the
+  unreachable/HTTP-error suffix).
+
 ## [0.23.2] - 2026-09-26
 
 Docs-only PATCH: the troubleshooting table learns the CLI's new blocked-account messages.
