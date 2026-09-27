@@ -13,8 +13,8 @@ It ships in two shapes from this one repo:
   (`SKILL.md` + its `references/`), installed via the cross-platform `skills` CLI. Same workflows,
   no slash commands.
 
-The `artor` CLI is the same for every agent (`npm install -g artor-cli`); the skill only teaches the
-agent how to drive it.
+The `artor` CLI is the same for every agent (`npm install -g artor-cli`, which needs Node 22 or
+newer); the skill only teaches the agent how to drive it.
 
 ## Install
 

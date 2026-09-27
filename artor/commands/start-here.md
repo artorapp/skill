@@ -15,8 +15,12 @@ artor --version
 ```
 
 - **If it prints a version** → the CLI is installed; continue to step 1.
-- **If the command is not found** → stop and help them install it. Artor's CLI publishes to npm as
-  **`artor-cli`** (the command is still `artor`):
+- **If the command is not found** → stop and help them install it. The CLI needs **Node 22 or
+  newer**: check `node --version` first. If Node is missing or older, install the current LTS for
+  their system, asking before you do (macOS: `brew install node` if Homebrew is installed,
+  otherwise the installer from https://nodejs.org or a version manager such as nvm; Windows: the
+  nodejs.org installer; Linux: a version manager such as nvm), then re-check `node --version`.
+  Artor's CLI publishes to npm as **`artor-cli`** (the command is still `artor`):
 
   ```bash
   npm install -g artor-cli      # or: pnpm add -g artor-cli

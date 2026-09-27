@@ -12,8 +12,11 @@ End by **reporting findings + the fix**, not by guessing.
 artor --version
 ```
 
-- Not found → the CLI publishes to npm as **`artor-cli`** (command stays `artor`): suggest
-  `npm install -g artor-cli` (or `pnpm add -g artor-cli`), then re-check.
+- Not found → check `node --version` first: the CLI needs **Node 22 or newer** (if it is missing
+  or older, suggest the current LTS from https://nodejs.org, Homebrew's `brew install node` on
+  macOS, or a version manager such as nvm). Then the CLI publishes to npm as **`artor-cli`**
+  (command stays `artor`): suggest `npm install -g artor-cli` (or `pnpm add -g artor-cli`), then
+  re-check.
 
 ## 2. Is this dir linked, and who am I?
 

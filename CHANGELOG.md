@@ -53,6 +53,15 @@ permanent-delete or single-version-delete support.
   `--folder` (or `--folder Draft`) files under the space's Draft. A failed folder listing or
   create (a reviewer seat's read-only space) also exits 1 and is reported, not retried elsewhere.
 
+### Node prerequisite
+
+- **`/artor:start-here`, `/artor:doctor` and the troubleshooting table now check Node first.** A
+  missing `artor` command can mean Node itself is missing, and `npm install -g artor-cli` cannot
+  work without it. The agent now runs `node --version`, needs **Node 22 or newer** (the CLI's
+  `engines.node`), and if it is missing or older installs the current LTS for the user's system
+  (asking first: Homebrew on macOS if present, otherwise the nodejs.org installer or a version
+  manager such as nvm), then installs the CLI. The README's install line states the Node floor too.
+
 ## [0.24.0] - 2026-09-26
 
 MINOR: teaches the skill about **multiple CLI logins**. The machine can now hold several stored
