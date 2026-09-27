@@ -282,6 +282,8 @@ Four rules hold across the whole CLI, so they are stated once here rather than r
 | Fork a project into a NEW one you own    | `artor remix <project> [name] [--name <n>] [--org <slug>] [--ref <r>] [--dir <p>]` |
 | Rename a project's display name          | `artor rename [<ref>] "New Name" [--org <ref>]`                                    |
 | Trash a project (recoverable 30 days)    | `artor rm [<ref>] [--org <ref>] [--yes]`                                           |
+| Permanently delete a project, no way back | `artor rm [<ref>] --permanent [--confirm "<exact name>"]` (artor-cli 0.29.0+)     |
+| Permanently delete ONE version           | `artor rm [<ref>] --version <n> [--yes]` (artor-cli 0.29.0+)                       |
 | Restore a trashed project                | `artor restore <ref> [--org <ref>]`                                                |
 | List trashed projects + time left        | `artor trash [--org <ref>] [--json]`                                               |
 | Organize prototypes into folders         | `artor folder list\|create\|rename\|color\|move\|rm\|clear`                        |
@@ -300,6 +302,28 @@ Four rules hold across the whole CLI, so they are stated once here rather than r
 > the listing and the `artor restore <ref>` you print next always look at the same tenant.
 > Previously it always fell back to the token's home org, which could list a **different** org's
 > trash than `restore` would search.
+
+> **`artor rm --permanent` deletes for good, live or already trashed — never run it without the
+> user's explicit instruction.** Plain `artor rm` only moves a prototype to the trash (recoverable
+> for 30 days); `--permanent` skips the trash entirely and there is no restore, no support recovery,
+> nothing. Treat "delete", "remove", or "trash it" from a user as the plain (recoverable) form
+> unless they say "permanently", "for good", "no way back", or similar — and even then, confirm
+> which prototype before running it. The confirmation is the prototype's **exact current name**:
+> retyped on a terminal, or passed as `--confirm "<exact name>"` when unattended (as an agent, you
+> are always unattended here). `--yes`/`-y` alone is refused for a permanent delete ("--yes is not
+> enough for a permanent delete. Pass --confirm \"<name>\"."); `--confirm` without `--permanent` is
+> refused too ("--confirm only applies with --permanent."). A rename racing your delete produces a
+> clean 409 rather than deleting the wrong prototype under a stale name. `--version <n>` deletes
+> **one version only** (always permanent — there is no trash for a single version, and it never
+> combines with `--permanent`), confirmed the same way plain `rm` is (`--yes`/`-y` or a terminal
+> y/N); the server refuses to delete a prototype's only live version or one still mid-publish
+> (409 — try again or delete the whole prototype instead). Both flags need **artor-cli 0.29.0+**;
+> an older CLI has no `--permanent`/`--version` support at all. Only the prototype's **owner**, a
+> **space admin**, or an **org admin** may delete (permanently or to the trash) or restore one —
+> a personal space's owner-only rule applies there too. If a folder's linked prototype was already
+> permanently deleted, `artor publish` there says so ("This prototype no longer exists (it may have
+> been permanently deleted). Run `artor init` to start a new one.") — don't retry the publish, run
+> `artor init` (or `artor link`) instead.
 
 **Publish, open, review**
 
@@ -760,7 +784,11 @@ or a subsequent version overwrite (above), turns out wrong.
   never the upstream credential).
 - **`artor remix <project>`** forks into a **brand-new project you own** (like `git clone`),
   recording what it was forked from. Use it to branch off someone else's prototype. Remix does **not**
-  install deps or build — cd in, install, then `artor publish`.
+  install deps or build — cd in, install, then `artor publish`. **As an agent, always pass a name**
+  (positional `[name]` or `--name "<name>"`) — with no TTY and no name, `remix` fails loud rather
+  than inventing one. This mirrors the dashboard's "Remix" AI-agent prompt, which hands an agent the
+  exact `artor remix <id> --org <slug>` command and tells it to pick a short name and run it with
+  `--name "<name>"`; if the user hasn't said what to name the fork, ask them rather than guessing.
 - **`artor dump [--all-versions] [--out <dir>]`** bulk-exports the source of **every project in
   the org** to `<out>/<slug>/v<version>/` (default `./artor-dump`, latest version only unless
   `--all-versions`; never overwrites existing files). Each run spends one plan-limited **dump

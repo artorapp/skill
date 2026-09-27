@@ -7,6 +7,44 @@ uses pre-1.0 (0.x) semver — new user-visible capability bumps MINOR, fixes/doc
 After a version bump, users pull it with `claude plugin marketplace update artor && claude plugin
 update artor@artor` (update only fires on a version bump).
 
+## [0.25.0] - 2026-09-27
+
+MINOR: teaches the skill about **permanent deletion** (`artor rm --permanent` and
+`artor rm --version <n>`), and adds an explicit agent-safety rule around it. Also documents that
+the dashboard's Remix "AI-agent" prompt hands an agent `artor remix <id> --org <slug>` and expects
+it to append `--name "<name>"` itself. **Requires artor-cli 0.29.0+** for `--permanent`,
+`--confirm`, and `--version` on `artor rm`; an older CLI can still trash/restore but has no
+permanent-delete or single-version-delete support.
+
+### Added
+
+- **`artor/SKILL.md`, "Project lifecycle" table**: two new rows — `artor rm [<ref>] --permanent
+  [--confirm "<exact name>"]` (permanently deletes a prototype, live or already trashed, no way
+  back) and `artor rm [<ref>] --version <n> [--yes]` (permanently deletes one version only, never
+  combinable with `--permanent`) — both flagged as requiring artor-cli 0.29.0+.
+- **New callout right after the existing `artor trash` org-awareness note**, covering:
+  - **Agent-safety rule:** never run `--permanent` without the user's explicit instruction. Plain
+    "delete"/"remove"/"trash it" means the recoverable trash form; only "permanently",
+    "for good", "no way back" (or similar) means `--permanent` — and even then, confirm which
+    prototype before running it.
+  - The confirmation is the prototype's **exact current name**, passed as `--confirm "<name>"`
+    when unattended (an agent is always unattended here); `--yes` alone is refused
+    ("--yes is not enough for a permanent delete. Pass --confirm \"<name>\"."), and `--confirm`
+    without `--permanent` is refused too ("--confirm only applies with --permanent."). A rename
+    racing the delete produces a clean 409 rather than deleting the wrong prototype under a stale
+    name.
+  - `--version <n>` is always permanent (no trash for a single version), never combinable with
+    `--permanent`, confirmed like plain `rm` (`--yes`/`-y` or a terminal y/N); the server refuses
+    to delete a prototype's only live version or one still mid-publish (409).
+  - Who may delete or restore: the prototype's **owner**, a **space admin**, or an **org admin**
+    (a personal space's owner-only rule still applies there).
+  - `artor publish` from a folder whose linked prototype was permanently deleted now says so and
+    points at `artor init` instead of retrying the publish.
+- **"`pull` vs `remix`" section**: the `remix` bullet now tells an agent to always pass a name
+  (positional or `--name "<name>"`), and notes this mirrors the dashboard's Remix "AI-agent"
+  prompt, which hands over the exact `artor remix <id> --org <slug>` command and expects the agent
+  to append `--name "<name>"` itself after picking (or asking the user for) a short name.
+
 ## [0.24.0] - 2026-09-26
 
 MINOR: teaches the skill about **multiple CLI logins**. The machine can now hold several stored
