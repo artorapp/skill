@@ -62,6 +62,21 @@ permanent-delete or single-version-delete support.
   (asking first: Homebrew on macOS if present, otherwise the nodejs.org installer or a version
   manager such as nvm), then installs the CLI. The README's install line states the Node floor too.
 
+### Moving and folder deletes follow the organize and delete rules
+
+- **`artor/references/org-admin.md`, Folders section**: replaced the stale "admin-only" wording.
+  `artor folder move` and a plain `artor folder rm` follow the organize rule: each side of a move
+  passes at write level or for a space manager at any seat (a Personal Space's owner, an org admin
+  in any non-Personal Space without joining it, or that Space's admin); a plain reviewer or
+  read-only viewer gets 403 `space_read_only`. `rm --with-content` and `clear` follow the delete
+  rule (same managers, any seat).
+- **New `owner_move_required` bullet**: moving a prototype into another Personal or Shared Space
+  also needs its owner or an org admin, else 403 "Only the prototype's owner or an org admin can
+  move it to another Space."; `space rm --move-to` hits the same rule.
+- **"Managing is not writing" bullet**: an unjoined org admin may now move, delete folders, and
+  trash, restore or permanently delete prototypes in a Shared Space; other writes still need a
+  join.
+
 ## [0.24.0] - 2026-09-26
 
 MINOR: teaches the skill about **multiple CLI logins**. The machine can now hold several stored

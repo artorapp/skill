@@ -188,9 +188,11 @@ artor space members <space> rm <email-or-id>                          # Space ad
   one Space; an org admin manages **every** shared Space without being a member of it. A plain
   Space member, or a read-only viewer who is not an org admin, gets 403 `space_admin_required`.
 - **Managing is not writing.** An org admin who has not joined a shared Space still only VIEWS its
-  prototypes: publish, rename, move, trash, share, folder ops, env vars and mocks there fail with
-  403 `space_read_only`. The fix is to join it first
-  (`artor space members <space> add <their-email>`), which is itself audited.
+  prototypes: publish, rename, share, folder create/rename/color, env vars and mocks there fail
+  with 403 `space_read_only`. The fix is to join it first
+  (`artor space members <space> add <their-email>`), which is itself audited. The exceptions are
+  **organizing and deleting**: an org admin may move prototypes, delete a folder, and trash,
+  restore or permanently delete prototypes there without joining (see the Folders section below).
 - A **Personal** Space is never visible to or manageable by anyone else, admins and operators
   included.
 - `artor init` asks which Space first, then the folder. Non-TTY lands in the Organization Space's
@@ -200,7 +202,8 @@ artor space members <space> rm <email-or-id>                          # Space ad
 
 Organize prototypes into folders **within a Space** in the linked dir's org. Interactive pickers
 appear on a TTY for `create`/`color`/`move`. A folder in a Space you can't reach is a clean 404;
-in a Space you can only read, every folder op is refused with 403 `space_read_only`.
+in a Space you can only read, every folder op is refused with 403 `space_read_only`, except the
+organize and delete ops a space manager may run at any seat (below).
 
 ```bash
 artor folder list [--space <name|id>]        # (alias ls)
@@ -212,9 +215,26 @@ artor folder rm <ref> [--with-content|--with-prototypes|--with-projects] [--yes]
 artor folder clear <ref> [--yes]
 ```
 
-- **`rm`** by default moves the folder's prototypes to **Draft**. `--with-content` (and its aliases)
-  **trashes** them instead — **admin-only**.
-- **`clear`** soft-deletes every prototype in the folder — **admin-only**.
+- **Who can organize (`move`, plain `rm`).** Each side of a move is checked on its own, and a move
+  to another Space must pass on **both** the source and the target. A side passes for anyone who
+  can write there, or for a **space manager at any seat**: the owner of a **Personal** Space (nobody
+  else, ever), an **org admin** in the Organization Space or any Shared Space (no need to join it),
+  or that Shared Space's own **admin**. So a reviewer seat does not stop a manager. A plain reviewer
+  or a read-only viewer gets **403 `space_read_only`** (they may still reorganize their own
+  Personal Space); a Space they can't see is a 404. A rename in the same request stays write-only.
+- **Owner protection: 403 `owner_move_required`.** Moving a prototype to **another** Personal or
+  Shared Space, where its owner may lose access, also needs the actor to be the prototype's
+  **owner** or an **org admin** (or the prototype to have no owner left). Otherwise the move is
+  refused with "Only the prototype's owner or an org admin can move it to another Space." Moves
+  within a Space and moves into the Organization Space are never refused by this rule. It is only
+  checked once both sides are visible, so it never reveals a walled Space. `artor space rm
+  --move-to` hits the same rule when the Space holds a colleague's prototypes: relocate into the
+  Organization Space, or ask an org admin.
+- **`rm`** by default moves the folder's prototypes to **Draft** (organizing, rules above).
+  `--with-content` (and its aliases) **trashes** them instead, which follows the delete rule: the
+  owner of a Personal Space, an org admin in any non-Personal Space (no join needed), or that
+  Space's admin, at any seat. Anyone else who can see the folder gets 403.
+- **`clear`** soft-deletes every prototype in the folder: same delete rule as `--with-content`.
 - The **Draft** folder is immutable: it can't be renamed or deleted. There is exactly one **per
   Space**, and a prototype with no folder resolves to its Space's Draft.
 - **Folders are per-kind.** A slide deck's folders are entirely separate from a prototype's —
