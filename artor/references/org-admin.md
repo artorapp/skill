@@ -159,6 +159,7 @@ artor space list                             # the Spaces you can see
 artor space create <name>                    # shared Space (Team+ plan); you become its admin
 artor space rename <space> "<new>"           # Space admin or org admin
 artor space read <space> on|off              # let the WHOLE org read + comment
+artor space color <space> <color>|none|--clear   # set/clear the Space's color (artor-cli 0.29.0+)
 artor space rm <space> [--yes]               # delete an EMPTY shared Space (Space admin or org admin)
 artor space rm <space> --move-to <folder> [--yes]   # move its prototypes out first, then delete
 artor space members <space>
@@ -177,6 +178,17 @@ artor space members <space> rm <email-or-id>                          # Space ad
   From an agent-driven run, name those targets **exactly** (id or full name). An exact ref is never
   questioned; `artor space members <space>` with no action is read-only and keeps the partial
   ladder.
+- **`space color` is cosmetic** (never changes access). Any CSS color the dashboard accepts
+  (`#8b5cf6`, `rgb(...)`, `hsl(...)`, `oklch(...)`, a real CSS color name) as long as it is
+  **solid**: `transparent`, `currentcolor`, `color(...)` and any alpha below 1 are refused before
+  any request. `none` and `--clear` both clear it; a color plus `--clear` is a usage error. With no
+  color it opens a swatch picker on a terminal and is required off one, so an agent always passes
+  the color. Quote a multi-word Space name (extra words are a usage error). A partial `<space>` is
+  refused unattended like `read`, so pass the exact id or name. Who may: a shared Space's admin or
+  an org admin, the owner for their own Personal Space, org admins for the Organization Space
+  (a reviewer seat does not block it). Icons, emoji and images are dashboard-only. `space list`
+  leads each row with the Space's emoji, else a swatch of its color; `--json` carries
+  `icon`/`color`/`imageUrl`.
 - **`read on` is a deliberate widening.** Every org member can then see the Space, open its
   prototypes, and **comment** — and nothing else. Publish, rename, move, trash, share, folder ops,
   env vars and mocks all fail with **403 `space_read_only`** (not a 404 — the caller can already

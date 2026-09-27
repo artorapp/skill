@@ -288,6 +288,7 @@ Four rules hold across the whole CLI, so they are stated once here rather than r
 | List trashed projects + time left        | `artor trash [--org <ref>] [--json]`                                               |
 | Organize prototypes into folders         | `artor folder list\|create\|rename\|color\|move\|rm\|clear`                        |
 | Control WHO can reach a set of prototypes | `artor space list\|create\|rename\|read\|rm\|members`                              |
+| Set or clear a Space's color             | `artor space color <space> <color>\|none\|--clear` (artor-cli 0.29.0+)             |
 
 > **`init --folder` only files into a folder that exists** (artor-cli 0.29.0+). An agent run is
 > unattended, so a `--folder <name>` that matches nothing stops with exit 1

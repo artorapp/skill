@@ -53,6 +53,18 @@ permanent-delete or single-version-delete support.
   `--folder` (or `--folder Draft`) files under the space's Draft. A failed folder listing or
   create (a reviewer seat's read-only space) also exits 1 and is reported, not retried elsewhere.
 
+### Space colors
+
+- **`artor space color <space> <color>|none|--clear`** (artor-cli 0.29.0+): new row in
+  `artor/SKILL.md`'s command table, and a new bullet plus command line in
+  `artor/references/org-admin.md`'s Spaces section. It covers the solid-color rule (translucent,
+  `transparent`, `currentcolor` and `color(...)` are refused before any request), `none`/`--clear`,
+  the terminal-only swatch picker (so an agent always passes the color), the exact-name rule for
+  unattended runs, who may change it (a shared Space's admin or an org admin, a Personal Space's
+  owner, org admins for the Organization Space; reviewer seats included), and `space list`'s new
+  emoji/swatch lead and `--json` `icon`/`color`/`imageUrl` fields. Icons, emoji and images stay
+  dashboard-only.
+
 ### Node prerequisite
 
 - **`/artor:start-here`, `/artor:doctor` and the troubleshooting table now check Node first.** A
