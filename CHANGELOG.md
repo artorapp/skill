@@ -44,6 +44,14 @@ permanent-delete or single-version-delete support.
   (positional or `--name "<name>"`), and notes this mirrors the dashboard's Remix "AI-agent"
   prompt, which hands over the exact `artor remix <id> --org <slug>` command and expects the agent
   to append `--name "<name>"` itself after picking (or asking the user for) a short name.
+- **New callout before "Project ids carry a random suffix"**: `artor init --folder` only files
+  into a folder that exists (artor-cli 0.29.0+). Unattended, a `--folder <name>` that matches
+  nothing exits 1 with `Folder "<name>" not found in <space>.` and any "Did you mean" close
+  matches, and creates nothing; it is never created silently and never swapped for Draft. The
+  agent picks an existing folder from `artor folder list --json`, or runs
+  `artor folder create "<name>" [--space <s>]` first when the user wants a new one; omitting
+  `--folder` (or `--folder Draft`) files under the space's Draft. A failed folder listing or
+  create (a reviewer seat's read-only space) also exits 1 and is reported, not retried elsewhere.
 
 ## [0.24.0] - 2026-09-26
 

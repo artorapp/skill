@@ -289,6 +289,16 @@ Four rules hold across the whole CLI, so they are stated once here rather than r
 | Organize prototypes into folders         | `artor folder list\|create\|rename\|color\|move\|rm\|clear`                        |
 | Control WHO can reach a set of prototypes | `artor space list\|create\|rename\|read\|rm\|members`                              |
 
+> **`init --folder` only files into a folder that exists** (artor-cli 0.29.0+). An agent run is
+> unattended, so a `--folder <name>` that matches nothing stops with exit 1
+> (`Folder "<name>" not found in <space>.`, plus any "Did you mean" close matches) and creates
+> nothing - it is never created silently, and never swapped for Draft. Pick an existing folder
+> from `artor folder list [--space <s>] --json`, or, if the user really wants a new one, run
+> `artor folder create "<name>" [--space <s>]` first, then `init --folder "<name>"`. Omit
+> `--folder` (or pass `--folder Draft`) for the space's Draft. A folder listing or create that
+> fails (e.g. a reviewer seat's read-only space) also exits 1: report it, don't retry elsewhere.
+> Older CLIs created a missing folder on the spot.
+
 > **Project ids carry a random suffix.** `artor init` creates `my-prototype-a7f`, not
 > `my-prototype`, and prints the local folder name and the project id on separate lines - they are
 > SUPPOSED to differ, so do not report that as an error or retry. Always use the id the CLI
