@@ -7,6 +7,88 @@ uses pre-1.0 (0.x) semver — new user-visible capability bumps MINOR, fixes/doc
 After a version bump, users pull it with `claude plugin marketplace update artor && claude plugin
 update artor@artor` (update only fires on a version bump).
 
+## [0.25.0] - 2026-09-27
+
+MINOR: teaches the skill about **permanent deletion** (`artor rm --permanent` and
+`artor rm --version <n>`), and adds an explicit agent-safety rule around it. Also documents that
+the dashboard's Remix "AI-agent" prompt hands an agent `artor remix <id> --org <slug>` and expects
+it to append `--name "<name>"` itself. **Requires artor-cli 0.29.0+** for `--permanent`,
+`--confirm`, and `--version` on `artor rm`; an older CLI can still trash/restore but has no
+permanent-delete or single-version-delete support.
+
+### Added
+
+- **`artor/SKILL.md`, "Project lifecycle" table**: two new rows — `artor rm [<ref>] --permanent
+  [--confirm "<exact name>"]` (permanently deletes a prototype, live or already trashed, no way
+  back) and `artor rm [<ref>] --version <n> [--yes]` (permanently deletes one version only, never
+  combinable with `--permanent`) — both flagged as requiring artor-cli 0.29.0+.
+- **New callout right after the existing `artor trash` org-awareness note**, covering:
+  - **Agent-safety rule:** never run `--permanent` without the user's explicit instruction. Plain
+    "delete"/"remove"/"trash it" means the recoverable trash form; only "permanently",
+    "for good", "no way back" (or similar) means `--permanent` — and even then, confirm which
+    prototype before running it.
+  - The confirmation is the prototype's **exact current name**, passed as `--confirm "<name>"`
+    when unattended (an agent is always unattended here); `--yes` alone is refused
+    ("--yes is not enough for a permanent delete. Pass --confirm \"<name>\"."), and `--confirm`
+    without `--permanent` is refused too ("--confirm only applies with --permanent."). A rename
+    racing the delete produces a clean 409 rather than deleting the wrong prototype under a stale
+    name.
+  - `--version <n>` is always permanent (no trash for a single version), never combinable with
+    `--permanent`, confirmed like plain `rm` (`--yes`/`-y` or a terminal y/N); the server refuses
+    to delete a prototype's only live version or one still mid-publish (409).
+  - Who may delete or restore: the prototype's **owner**, a **space admin**, or an **org admin**
+    (a personal space's owner-only rule still applies there).
+  - `artor publish` from a folder whose linked prototype was permanently deleted now says so and
+    points at `artor init` instead of retrying the publish.
+- **"`pull` vs `remix`" section**: the `remix` bullet now tells an agent to always pass a name
+  (positional or `--name "<name>"`), and notes this mirrors the dashboard's Remix "AI-agent"
+  prompt, which hands over the exact `artor remix <id> --org <slug>` command and expects the agent
+  to append `--name "<name>"` itself after picking (or asking the user for) a short name.
+- **New callout before "Project ids carry a random suffix"**: `artor init --folder` only files
+  into a folder that exists (artor-cli 0.29.0+). Unattended, a `--folder <name>` that matches
+  nothing exits 1 with `Folder "<name>" not found in <space>.` and any "Did you mean" close
+  matches, and creates nothing; it is never created silently and never swapped for Draft. The
+  agent picks an existing folder from `artor folder list --json`, or runs
+  `artor folder create "<name>" [--space <s>]` first when the user wants a new one; omitting
+  `--folder` (or `--folder Draft`) files under the space's Draft. A failed folder listing or
+  create (a reviewer seat's read-only space) also exits 1 and is reported, not retried elsewhere.
+
+### Space colors
+
+- **`artor space color <space> <color>|none|--clear`** (artor-cli 0.29.0+): new row in
+  `artor/SKILL.md`'s command table, and a new bullet plus command line in
+  `artor/references/org-admin.md`'s Spaces section. It covers the solid-color rule (translucent,
+  `transparent`, `currentcolor` and `color(...)` are refused before any request), `none`/`--clear`,
+  the terminal-only swatch picker (so an agent always passes the color), the exact-name rule for
+  unattended runs, who may change it (a shared Space's admin or an org admin, a Personal Space's
+  owner, org admins for the Organization Space; reviewer seats included), and `space list`'s new
+  emoji/swatch lead and `--json` `icon`/`color`/`imageUrl` fields. Icons, emoji and images stay
+  dashboard-only.
+
+### Node prerequisite
+
+- **`/artor:start-here`, `/artor:doctor` and the troubleshooting table now check Node first.** A
+  missing `artor` command can mean Node itself is missing, and `npm install -g artor-cli` cannot
+  work without it. The agent now runs `node --version`, needs **Node 22 or newer** (the CLI's
+  `engines.node`), and if it is missing or older installs the current LTS for the user's system
+  (asking first: Homebrew on macOS if present, otherwise the nodejs.org installer or a version
+  manager such as nvm), then installs the CLI. The README's install line states the Node floor too.
+
+### Moving and folder deletes follow the organize and delete rules
+
+- **`artor/references/org-admin.md`, Folders section**: replaced the stale "admin-only" wording.
+  `artor folder move` and a plain `artor folder rm` follow the organize rule: each side of a move
+  passes at write level or for a space manager at any seat (a Personal Space's owner, an org admin
+  in any non-Personal Space without joining it, or that Space's admin); a plain reviewer or
+  read-only viewer gets 403 `space_read_only`. `rm --with-content` and `clear` follow the delete
+  rule (same managers, any seat).
+- **New `owner_move_required` bullet**: moving a prototype into another Personal or Shared Space
+  also needs its owner or an org admin, else 403 "Only the prototype's owner or an org admin can
+  move it to another Space."; `space rm --move-to` hits the same rule.
+- **"Managing is not writing" bullet**: an unjoined org admin may now move, delete folders, and
+  trash, restore or permanently delete prototypes in a Shared Space; other writes still need a
+  join.
+
 ## [0.24.0] - 2026-09-26
 
 MINOR: teaches the skill about **multiple CLI logins**. The machine can now hold several stored

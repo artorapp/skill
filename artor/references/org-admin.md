@@ -159,6 +159,7 @@ artor space list                             # the Spaces you can see
 artor space create <name>                    # shared Space (Team+ plan); you become its admin
 artor space rename <space> "<new>"           # Space admin or org admin
 artor space read <space> on|off              # let the WHOLE org read + comment
+artor space color <space> <color>|none|--clear   # set/clear the Space's color (artor-cli 0.29.0+)
 artor space rm <space> [--yes]               # delete an EMPTY shared Space (Space admin or org admin)
 artor space rm <space> --move-to <folder> [--yes]   # move its prototypes out first, then delete
 artor space members <space>
@@ -177,6 +178,17 @@ artor space members <space> rm <email-or-id>                          # Space ad
   From an agent-driven run, name those targets **exactly** (id or full name). An exact ref is never
   questioned; `artor space members <space>` with no action is read-only and keeps the partial
   ladder.
+- **`space color` is cosmetic** (never changes access). Any CSS color the dashboard accepts
+  (`#8b5cf6`, `rgb(...)`, `hsl(...)`, `oklch(...)`, a real CSS color name) as long as it is
+  **solid**: `transparent`, `currentcolor`, `color(...)` and any alpha below 1 are refused before
+  any request. `none` and `--clear` both clear it; a color plus `--clear` is a usage error. With no
+  color it opens a swatch picker on a terminal and is required off one, so an agent always passes
+  the color. Quote a multi-word Space name (extra words are a usage error). A partial `<space>` is
+  refused unattended like `read`, so pass the exact id or name. Who may: a shared Space's admin or
+  an org admin, the owner for their own Personal Space, org admins for the Organization Space
+  (a reviewer seat does not block it). Icons, emoji and images are dashboard-only. `space list`
+  leads each row with the Space's emoji, else a swatch of its color; `--json` carries
+  `icon`/`color`/`imageUrl`.
 - **`read on` is a deliberate widening.** Every org member can then see the Space, open its
   prototypes, and **comment** — and nothing else. Publish, rename, move, trash, share, folder ops,
   env vars and mocks all fail with **403 `space_read_only`** (not a 404 — the caller can already
@@ -188,9 +200,11 @@ artor space members <space> rm <email-or-id>                          # Space ad
   one Space; an org admin manages **every** shared Space without being a member of it. A plain
   Space member, or a read-only viewer who is not an org admin, gets 403 `space_admin_required`.
 - **Managing is not writing.** An org admin who has not joined a shared Space still only VIEWS its
-  prototypes: publish, rename, move, trash, share, folder ops, env vars and mocks there fail with
-  403 `space_read_only`. The fix is to join it first
-  (`artor space members <space> add <their-email>`), which is itself audited.
+  prototypes: publish, rename, share, folder create/rename/color, env vars and mocks there fail
+  with 403 `space_read_only`. The fix is to join it first
+  (`artor space members <space> add <their-email>`), which is itself audited. The exceptions are
+  **organizing and deleting**: an org admin may move prototypes, delete a folder, and trash,
+  restore or permanently delete prototypes there without joining (see the Folders section below).
 - A **Personal** Space is never visible to or manageable by anyone else, admins and operators
   included.
 - `artor init` asks which Space first, then the folder. Non-TTY lands in the Organization Space's
@@ -200,7 +214,8 @@ artor space members <space> rm <email-or-id>                          # Space ad
 
 Organize prototypes into folders **within a Space** in the linked dir's org. Interactive pickers
 appear on a TTY for `create`/`color`/`move`. A folder in a Space you can't reach is a clean 404;
-in a Space you can only read, every folder op is refused with 403 `space_read_only`.
+in a Space you can only read, every folder op is refused with 403 `space_read_only`, except the
+organize and delete ops a space manager may run at any seat (below).
 
 ```bash
 artor folder list [--space <name|id>]        # (alias ls)
@@ -212,9 +227,26 @@ artor folder rm <ref> [--with-content|--with-prototypes|--with-projects] [--yes]
 artor folder clear <ref> [--yes]
 ```
 
-- **`rm`** by default moves the folder's prototypes to **Draft**. `--with-content` (and its aliases)
-  **trashes** them instead — **admin-only**.
-- **`clear`** soft-deletes every prototype in the folder — **admin-only**.
+- **Who can organize (`move`, plain `rm`).** Each side of a move is checked on its own, and a move
+  to another Space must pass on **both** the source and the target. A side passes for anyone who
+  can write there, or for a **space manager at any seat**: the owner of a **Personal** Space (nobody
+  else, ever), an **org admin** in the Organization Space or any Shared Space (no need to join it),
+  or that Shared Space's own **admin**. So a reviewer seat does not stop a manager. A plain reviewer
+  or a read-only viewer gets **403 `space_read_only`** (they may still reorganize their own
+  Personal Space); a Space they can't see is a 404. A rename in the same request stays write-only.
+- **Owner protection: 403 `owner_move_required`.** Moving a prototype to **another** Personal or
+  Shared Space, where its owner may lose access, also needs the actor to be the prototype's
+  **owner** or an **org admin** (or the prototype to have no owner left). Otherwise the move is
+  refused with "Only the prototype's owner or an org admin can move it to another Space." Moves
+  within a Space and moves into the Organization Space are never refused by this rule. It is only
+  checked once both sides are visible, so it never reveals a walled Space. `artor space rm
+  --move-to` hits the same rule when the Space holds a colleague's prototypes: relocate into the
+  Organization Space, or ask an org admin.
+- **`rm`** by default moves the folder's prototypes to **Draft** (organizing, rules above).
+  `--with-content` (and its aliases) **trashes** them instead, which follows the delete rule: the
+  owner of a Personal Space, an org admin in any non-Personal Space (no join needed), or that
+  Space's admin, at any seat. Anyone else who can see the folder gets 403.
+- **`clear`** soft-deletes every prototype in the folder: same delete rule as `--with-content`.
 - The **Draft** folder is immutable: it can't be renamed or deleted. There is exactly one **per
   Space**, and a prototype with no folder resolves to its Space's Draft.
 - **Folders are per-kind.** A slide deck's folders are entirely separate from a prototype's —
