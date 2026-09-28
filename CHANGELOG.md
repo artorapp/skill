@@ -13,7 +13,8 @@ MINOR: teaches the skill to build prototypes whose review comments stay pinned. 
 re-find their element by text + role, then by CSS selector, and a unique `data-testid` is the
 strongest selector there is. Prototypes without tags fall back to position-based selectors, which
 break more easily, and chart bars and icon buttons (no text to match) are where comments got lost.
-No CLI or widget version requirement: every widget version already prefers `data-testid`.
+The tagging guidance needs no CLI or widget version: every widget version already prefers
+`data-testid`. The managed AGENTS.md / CLAUDE.md notes need **artor-cli 0.30.0+**.
 
 ### Added
 
@@ -30,6 +31,13 @@ No CLI or widget version requirement: every widget version already prefers `data
   - `aria-label` on icon-only buttons, which also feeds the text + role match.
   - Never reuse or strip testids; `data-test` / `data-cy` / `data-qa` count the same.
 - **"Address review feedback", step 2**: a pointer to tag what the fix touches.
+- **artor-cli 0.30.0+ review-anchor notes**: documents that `artor init` and every `artor publish`
+  keep a managed "Review anchors (Artor)" block in the prototype's `AGENTS.md` / `CLAUDE.md`
+  (target rules, idempotent refresh, never edit inside the markers), the opt-outs
+  (`--no-agent-notes` per run, `"agentNotes": false` in `.artor/project.json`), and the additive
+  `agentNotes` field of `--json` payloads (`files`, `status`, `hint`: act on the hint before the
+  next publish).
+- **Command reference**: a `--no-agent-notes` row.
 
 ### Changed
 

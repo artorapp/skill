@@ -349,6 +349,7 @@ Four rules hold across the whole CLI, so they are stated once here rather than r
 | Skip the web-sdk update check (see notes)   | `artor publish --no-sdk-update`                            |
 | Force artifact type / entry / output dir    | `artor publish --static\|--node [--entry <s>] [--dir <p>]` |
 | Skip the boot smoke test (see notes)        | `artor publish --no-smoke`                                 |
+| Skip the review-anchor notes (see notes)    | `artor publish --no-agent-notes` (also on `init`)          |
 | List what the source snapshot would upload  | `artor publish --list-source` (no build, no upload)        |
 | Resolve local-vs-server mock drift (see notes) | `artor publish --mocks=local\|server`                    |
 | Open the latest / a specific version        | `artor open` / `artor open --version 3` / `--alias <name>` |
@@ -793,6 +794,18 @@ publish, do a quick pass over what you touched:
 
 When you address review feedback (below), keep the tags of the elements you change: a comment on
 v3 stays pinned to v3 either way, but stable tags let the next round of comments land precisely too.
+
+**The CLI keeps these rules in the repo for you** (artor-cli 0.30.0+). `artor init` and every
+`artor publish` write a managed "Review anchors (Artor)" block into the prototype's `AGENTS.md`
+(or `CLAUDE.md` when that is the only instructions file; both when both exist, unless `CLAUDE.md`
+imports `@AGENTS.md`), creating `AGENTS.md` if neither exists. It is idempotent: a line like
+`Added review-anchor notes to AGENTS.md.` prints only when the file actually changed. Don't edit
+inside its `<!-- >>> artor review anchors ... -->` markers (the next publish rewrites them); write
+your own notes outside. Opt out for one run with `--no-agent-notes`, or for good with
+`"agentNotes": false` in `.artor/project.json`. Under `--json`, the payload carries an
+`agentNotes` object (`files`, `status`: `added` | `updated` | `current` | `disabled` | `failed`,
+and a `hint` except when `current`): when a `hint` is present, do the tagging pass above before the
+next publish. Commit the file along with your changes; it is ordinary project source.
 
 ## Local safety checkpoint before publishing
 
