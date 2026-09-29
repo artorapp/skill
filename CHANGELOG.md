@@ -7,6 +7,43 @@ uses pre-1.0 (0.x) semver — new user-visible capability bumps MINOR, fixes/doc
 After a version bump, users pull it with `claude plugin marketplace update artor && claude plugin
 update artor@artor` (update only fires on a version bump).
 
+## [0.26.0] - 2026-09-28
+
+MINOR: teaches the skill to build prototypes whose review comments stay pinned. Reviewers' pins
+re-find their element by text + role, then by CSS selector, and a unique `data-testid` is the
+strongest selector there is. Prototypes without tags fall back to position-based selectors, which
+break more easily, and chart bars and icon buttons (no text to match) are where comments got lost.
+The tagging guidance needs no CLI or widget version: every widget version already prefers
+`data-testid`. The managed AGENTS.md / CLAUDE.md notes need **artor-cli 0.30.0+**.
+
+### Added
+
+- **`artor/SKILL.md`, new section "Make the prototype reviewable (stable tags for comment
+  pins)"**, placed before the pre-publish safety checkpoint:
+  - A unique, kebab-case `data-testid` on every interactive element (button, link, input, tab,
+    menu item, toggle) and every meaningful block (card, section, chart, row, list item, dialog),
+    named area + thing (+ action).
+  - Repeated items use the item's own id, never its index (an index moves when a list re-sorts).
+  - No UI state in the id (state stays in `aria-selected` / `data-state`, which the widget
+    ignores).
+  - Charts and visual-only elements called out as the most important case: tag every bar,
+    series, legend item and data point.
+  - `aria-label` on icon-only buttons, which also feeds the text + role match.
+  - Never reuse or strip testids; `data-test` / `data-cy` / `data-qa` count the same.
+- **"Address review feedback", step 2**: a pointer to tag what the fix touches.
+- **artor-cli 0.30.0+ review-anchor notes**: documents that `artor init` and every `artor publish`
+  keep a managed "Review anchors (Artor)" block in the prototype's `AGENTS.md` / `CLAUDE.md`
+  (target rules, idempotent refresh, never edit inside the markers), the opt-outs
+  (`--no-agent-notes` per run, `"agentNotes": false` in `.artor/project.json`), and the additive
+  `agentNotes` field of `--json` payloads (`files`, `status`, `hint`: act on the hint before the
+  next publish).
+- **Command reference**: a `--no-agent-notes` row.
+
+### Changed
+
+- Plugin and marketplace version bumped 0.25.0 -> 0.26.0 (required for `claude plugin update`
+  to pull it).
+
 ## [0.25.0] - 2026-09-27
 
 MINOR: teaches the skill about **permanent deletion** (`artor rm --permanent` and

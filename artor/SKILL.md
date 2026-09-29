@@ -349,6 +349,7 @@ Four rules hold across the whole CLI, so they are stated once here rather than r
 | Skip the web-sdk update check (see notes)   | `artor publish --no-sdk-update`                            |
 | Force artifact type / entry / output dir    | `artor publish --static\|--node [--entry <s>] [--dir <p>]` |
 | Skip the boot smoke test (see notes)        | `artor publish --no-smoke`                                 |
+| Skip the review-anchor notes (see notes)    | `artor publish --no-agent-notes` (also on `init`)          |
 | List what the source snapshot would upload  | `artor publish --list-source` (no build, no upload)        |
 | Resolve local-vs-server mock drift (see notes) | `artor publish --mocks=local\|server`                    |
 | Open the latest / a specific version        | `artor open` / `artor open --version 3` / `--alias <name>` |
@@ -766,6 +767,46 @@ size of the change from that diff:
 - This is a per-publish judgment call, not a remembered session preference: ask again next time,
   even if the previous answer was "no."
 
+## Make the prototype reviewable (stable tags for comment pins)
+
+Reviewers pin comments to elements with the in-page widget. The widget re-finds each pinned element
+by its text + role, then by a CSS selector, and **the strongest selector is a unique
+`data-testid`**. Without one it falls back to the element's position in the page, which still
+works on the immutable version but breaks more easily (a re-sorted list, a different tab open). So
+whenever you **build or edit** a prototype that will be published to Artor, tag it. Before a
+publish, do a quick pass over what you touched:
+
+1. **Every interactive element and every meaningful block gets a `data-testid` that is unique on
+   the page.** Interactive = button, link, input, select, tab, menu item, toggle. Meaningful block
+   = card, section, chart, table row, list item, dialog. Use kebab-case, named by area + thing
+   (+ action): `needs-attention-dismiss`, `insights-plan-outline`, `library-add-source`.
+2. **Repeated items use the item's own id, never its index**: `conversation-row-c15`, not
+   `conversation-row-5`. An index points at a different item as soon as the list re-sorts or
+   filters.
+3. **No state in the id**: `nav-insights`, not `nav-insights-active`. State belongs in
+   `aria-selected` / `data-state`, which the widget ignores on purpose.
+4. **Charts and visual-only elements are the most important case** (they have no text to match):
+   tag each bar, series, legend item, and data point, e.g. `topics-bar-covered-thinly`.
+5. **Icon-only buttons get an `aria-label`** ("Dismiss", "More actions"). It feeds the widget's
+   text + role match and is correct accessibility anyway.
+6. Don't reuse one testid for two elements, and don't strip existing ones. `data-test`, `data-cy`,
+   and `data-qa` work the same way if the project already uses one of those.
+
+When you address review feedback (below), keep the tags of the elements you change: a comment on
+v3 stays pinned to v3 either way, but stable tags let the next round of comments land precisely too.
+
+**The CLI keeps these rules in the repo for you** (artor-cli 0.30.0+). `artor init` and every
+`artor publish` write a managed "Review anchors (Artor)" block into the prototype's `AGENTS.md`
+(or `CLAUDE.md` when that is the only instructions file; both when both exist, unless `CLAUDE.md`
+imports `@AGENTS.md`), creating `AGENTS.md` if neither exists. It is idempotent: a line like
+`Added review-anchor notes to AGENTS.md.` prints only when the file actually changed. Don't edit
+inside its `<!-- >>> artor review anchors ... -->` markers (the next publish rewrites them); write
+your own notes outside. Opt out for one run with `--no-agent-notes`, or for good with
+`"agentNotes": false` in `.artor/project.json`. Under `--json`, the payload carries an
+`agentNotes` object (`files`, `status`: `added` | `updated` | `current` | `disabled` | `failed`,
+and a `hint` except when `current`): when a `hint` is present, do the tagging pass above before the
+next publish. Commit the file along with your changes; it is ordinary project source.
+
 ## Local safety checkpoint before publishing
 
 If the current directory is a git repository with uncommitted changes, commit them **locally**
@@ -876,7 +917,8 @@ threads from the CLI and act on them — no dashboard needed.
    ignore|unignore <threadId>`.
 
 2. **Fix the feedback** in the prototype's source. If you need the exact code of the reviewed
-   version, `artor pull --ref <version>` it first.
+   version, `artor pull --ref <version>` it first. Tag what you touch (see "Make the prototype
+   reviewable" above).
 
 3. **Re-publish** (generate a changelog as above), then tell the reviewer the new version number/URL.
    Most fixes ship as the **next** version, but a genuinely tiny fix may overwrite the current alias
