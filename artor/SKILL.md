@@ -372,6 +372,7 @@ Four rules hold across the whole CLI, so they are stated once here rather than r
 | Protect a NEW link with a password       | `printf %s "$PW" \| artor share add --password-stdin`        |
 | Set / change a LIVE link's password      | `printf %s "$PW" \| artor share set <share> --password-stdin` |
 | Remove a live link's password            | `artor share set <share> --remove-password`                  |
+| Show name/screenshot in a protected link's chat preview | `artor share set <share> --preview-name on --preview-image on` |
 | List + recopy this project's live links | `artor share list [--json]`                                  |
 | Extend a live link                      | `artor share extend <share> [--days N]`                      |
 | Turn a link off (dead, not "revoke")    | `artor share off <share>`                                    |
@@ -1086,6 +1087,16 @@ closed garden, so treat it carefully.
   the review widget at create time - members will still see it. Change it from the dashboard, or
   update the server." and still exits 0 - the link was created as requested, this control just
   didn't apply; relay that honestly.
+- **Link previews of a password-protected link** (artor-cli **0.31.0+**). When a protected link
+  is pasted into Slack, iMessage or similar, its preview card hides the prototype by default.
+  `artor share add|set <share> --preview-name on|off` reveals the prototype name and
+  `--preview-image on|off` a screenshot (with a lock badge). An open link always shows both, so
+  the switches only take effect while the link has a password (setting one on an open link is
+  stored, and the CLI says so). A preview flag alone is a valid `share set`. `share list` shows
+  `preview: name + screenshot|name|screenshot|hidden` on a protected link (`--json`:
+  `previewShowName`, `previewShowImage`). Against an older server, `share add` still creates the
+  link and says the preview stays hidden (exit 0); `share set` says nothing changed and exits 1 -
+  relay that honestly.
 - **`--mode pinned`** ties the link to **one fixed version** (pass `--deployment <id>`) — its bytes
   never change. **`--mode latest`** (the default) follows the newest publish.
 - **Duration** is `--days N` (default 7); the server clamps it to the org cap and platform ceiling

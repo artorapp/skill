@@ -18,6 +18,8 @@ like).
 
 ### Added
 
+- `artor share add|set --preview-name on|off --preview-image on|off` (artor-cli 0.31.0+): what a
+  password-protected link's chat link preview reveals; `share list` shows the setting.
 - Put hooks on the element itself, not only on a wrapper.
 - An `id` counts as a hook only when it looks hand-written (letters and single hyphens); `btn2`,
   `css-1dbjc4n` or `form_1` need a `data-testid`.
