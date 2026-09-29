@@ -43,7 +43,8 @@ tagging pass teaches exactly that. Cross-state pins need `@artorapp/web-sdk` 0.1
   is not a setup, and a setup outside the entry and the HTML pages is not seen.
 - Review widget reference: re-running `artor init` (artor-cli 0.31.0+) repairs an entry an older
   CLI left with two `init` imports, removing only the managed block (`Removed a duplicate Artor
-  setup from <file> ...`); otherwise a re-run changes nothing.
+  setup from <file> ...`), and only when the project's own setup still starts the SDK and the
+  block is untouched; otherwise a re-run changes nothing.
 - Publishing notes: `--no-build` warns when several output dirs exist and names the one it
   packs; pass `--dir` to choose another.
 - Review widget reference: Vite (`src/main.jsx` / `.js`) and CRA (`src/index.jsx` / `.js`)

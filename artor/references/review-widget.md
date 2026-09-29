@@ -52,9 +52,13 @@ safe to leave committed — it does nothing in production or on `localhost`.
   `artor init` leaves every file byte-identical, except the repair below.
 - Older CLIs (0.30.0 and earlier) prepended their block regardless, which could leave an entry
   with two `init` imports. **Re-running `artor init` (0.31.0+) repairs it:** it removes only the
-  managed block next to the project's own setup and prints `Removed a duplicate Artor setup from
+  managed block next to the project's own setup, and only when that setup still starts the SDK
+  itself (an `init` it imports is called, `ArtorWebSdk.init`, its own `<ArtorReview>`, or the
+  app-served script) and the managed block is untouched: a commented-out or sorter-moved import, or
+  a bare `import "@artorapp/web-sdk"`, is left alone. It prints `Removed a duplicate Artor setup from
   <file> (the project already sets up @artorapp/web-sdk in <path>).` On an older CLI, remove the
-  managed block by hand and keep the project's own import.
+  managed block by hand and keep the project's own import. For Next.js the repair also deletes the
+  generated `artor-review.tsx` when no other file may import it, else keeps it with a note.
 
 ## Manual wiring
 
