@@ -20,9 +20,58 @@ safe to leave committed — it does nothing in production or on `localhost`.
 - **Next.js App Router** — `artor init` writes a managed `"use client"` `ArtorReview` component file
   alongside your root layout and inserts `<ArtorReview />` right after the opening `<body>` tag. The
   component calls `init()` inside `useEffect` and returns `null`.
-- **Next.js Pages Router / Vite / CRA** — `artor init` prepends a guarded
+- **Next.js Pages Router / Vite / CRA / Angular**: `artor init` prepends a guarded
   `import { init } from "@artorapp/web-sdk"; if (typeof window !== "undefined") init();` block to the
-  detected entry file (`_app.tsx`, `main.tsx`, `src/index.tsx`, etc.).
+  detected entry file: `pages/_app.tsx` or `src/pages/_app.tsx`; Vite `src/main.tsx`, `.ts`, `.jsx` or `.js` (a JS entry,
+  e.g. a default Vue app, is wired from artor-cli 0.31.0); CRA `src/index.tsx`, `.ts`, `.jsx` or
+  `.js`; Angular: the browser entry `angular.json` names for the project `ng build` selects
+  (`browser`, or `main` on the browser builders), else `src/main.ts` (artor-cli 0.31.0+).
+
+## An existing setup is left alone (artor-cli 0.31.0+)
+
+- **`artor init` never edits a project that already sets the widget up.** Any import of
+  `@artorapp/web-sdk` in the entry (named, aliased, namespace, side-effect, a subpath, `import()`
+  with or without a bundler magic comment, or `require`), a call to `ArtorWebSdk.init` (also
+  `ArtorWebSdk?.init(`, `ArtorWebSdk.init?.(` or `window["ArtorWebSdk"].init(`), or an
+  `index.html` (root, `public/` or `src/`) with a `<script>` loading the SDK counts, and so does a
+  commented-out import. A type-only import (`import type`, `export type ... from`, or
+  `import { type A }` where every name is type-only) loads nothing at runtime, so it does NOT
+  count: init wires the entry and keeps it. init prints
+  `@artorapp/web-sdk is already set up in <file>; left it unchanged.` For Next.js, a layout that
+  already renders `<ArtorReview>` counts, and an `artor-review.tsx` Artor did not generate is never
+  overwritten. Don't "fix" such a project by adding a second `import { init }`: it won't compile.
+- **Only the entry and the HTML pages are checked.** A setup in another file (a module the entry
+  imports) is not seen, so init wires the entry too; remove one of the two.
+- **The dependency is declared once.** `"@artorapp/web-sdk": "latest"` goes into
+  `devDependencies` only when no section (`dependencies`, `devDependencies`, `peerDependencies`,
+  `optionalDependencies`) declares it; an existing version or pin (`^0.11.0`, `file:`,
+  `workspace:*`) is never changed. A `<script>` that loads the SDK by URL needs no dependency, so
+  none is added. The line is inserted as a minimal text edit (key order, indent, line endings and
+  a BOM are kept); a package.json that can't be edited safely (invalid JSON, not an object, or a
+  non-object `devDependencies`) is left as is with a warning naming the line to add. Re-running
+  `artor init` leaves every file byte-identical, except the repair below.
+- Older CLIs (0.30.0 and earlier) prepended their block regardless, which could leave an entry
+  with two `init` imports (or a Next layout with two `ArtorReview` imports), a file that does not
+  compile. **Re-running `artor init` (0.31.0+) repairs it:** it removes only the managed block,
+  and only when that block is exactly as Artor wrote it and the file's leading imports (read
+  from the top, past comments, directives, side-effect imports and re-exports) include its own
+  `import`, from any module, of a name the block imports (`import { init }`, `import sdk, { init }`,
+  a multi-line import, `import * as init`, `import { ArtorReview }` or a default `ArtorReview`;
+  `import type` does not count). Every other second setup keeps the block (an aliased import, a
+  differently named namespace import, `require`, a dynamic import, the IIFE global, a
+  conditional init, an HTML script, a commented-out or sorter-moved import): the widget never
+  mounts twice, so it is harmless. A same-name top-level `const`/`function` next to the block is
+  not repaired: delete the block by hand. It prints `Removed a duplicate Artor setup from <file>
+  (the project already sets up @artorapp/web-sdk in <path>).` On an older CLI, remove the managed
+  block by hand and keep the project's own import. For Next.js the repair also deletes the
+  generated `artor-review.tsx` when no other file may import it, else keeps it with a note.
+  A file that already imports its own `init` from another module (or a layout its own
+  `ArtorReview`) is never wired: init writes nothing and prints `<file> already imports its own
+  ...`, with the fix (import the SDK's `init` as `artorInit`, or rename the layout's import).
+  An edited managed block is never stripped or rewritten, on a repair or a plain re-run: init
+  prints `<file> has an Artor web-sdk block that was edited (by hand or by a tool), so it was left
+  as is. ...`; delete the block, marker lines included, and re-run. A generated `artor-review.tsx`
+  changed by hand is never overwritten.
 
 ## Manual wiring
 
@@ -34,7 +83,7 @@ or no known entry file), add the call by hand in the framework's client entry:
 import { init } from "@artorapp/web-sdk";
 useEffect(() => init().teardown, []);
 
-// Pages Router / Vite / CRA — top of the client entry file:
+// Pages Router / Vite / CRA / Angular: top of the client entry file:
 import { init } from "@artorapp/web-sdk";
 if (typeof window !== "undefined") init();
 ```

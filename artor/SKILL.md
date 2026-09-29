@@ -372,6 +372,7 @@ Four rules hold across the whole CLI, so they are stated once here rather than r
 | Protect a NEW link with a password       | `printf %s "$PW" \| artor share add --password-stdin`        |
 | Set / change a LIVE link's password      | `printf %s "$PW" \| artor share set <share> --password-stdin` |
 | Remove a live link's password            | `artor share set <share> --remove-password`                  |
+| Show name/screenshot in a protected link's chat preview | `artor share set <share> --preview-name on --preview-image on` |
 | List + recopy this project's live links | `artor share list [--json]`                                  |
 | Extend a live link                      | `artor share extend <share> [--days N]`                      |
 | Turn a link off (dead, not "revoke")    | `artor share off <share>`                                    |
@@ -547,7 +548,10 @@ works identically; a deck is just a project whose `kind` is `"slides"` instead o
 ## Publishing notes
 
 - **`artor publish` builds on demand** — it rebuilds from clean by default, so you do **not** need
-  to run `npm run build` first. Pass `--no-build` to reuse an existing build output.
+  to run `npm run build` first. Pass `--no-build` to reuse an existing build output; the
+  framework's own output dir wins, and if several output dirs exist (`dist`, `out`, `build`)
+  publish warns naming the one it packs: pass `--dir <path>` to choose another (a build configured
+  to write elsewhere always needs `--dir` with `--no-build`).
 - **`--alias <name>` (short `-v`) is the canonical way to name the movable alias.** `--version
   <name>` still sets the alias but is **deprecated on publish and warns once on stderr** - the same
   spelling means a version NUMBER everywhere else (`artor open --version 3`) and the CLI's own
@@ -562,8 +566,16 @@ works identically; a deck is just a project whose `kind` is `"slides"` instead o
   patch fails loud asking for `--yes` and a real mock conflict fails loud asking for
   `--mocks=local|server`. Read `version` and `url` from the object rather than parsing prose.
 - It auto-detects the framework: Next/SSR → **node-server** (static AND dynamic/API routes),
-  pure-static frameworks → **static**. Force with `--static` / `--node`; pass `--dir <path>` for a
-  non-standard output dir, `--entry <file>` for a node-server's entry. The build uses the project's
+  pure-static frameworks (Vite, CRA, Astro, Angular, ...) → **static**. Force with `--static` /
+  `--node`; pass `--dir <path>` for a non-standard output dir, `--entry <file>` for a node-server's
+  entry. **Angular** (artor-cli 0.31.0+) is detected by `angular.json` at the root plus an
+  Angular builder package (`@angular/build`, `@angular-devkit/build-angular`, `@angular-builders/*`),
+  never over Astro or Analog; it reads its output dir from `angular.json` for the project the
+  `ng build` in `scripts.build` selects, so no `--dir`. An Nx workspace (no angular.json) gets the
+  generic handling: pass `--dir` with the browser output dir. An Angular app whose build also
+  produces a server bundle (SSR, or a server entry used only to prerender at build time) stops
+  before building and asks for `--static`, which publishes the browser build only (no server
+  routes): confirm with the designer before adding it. The build uses the project's
   own package manager (npm, pnpm, yarn, or Bun — detected from the lockfile each publish).
 - **A live app is boot-tested before upload** — Artor starts it exactly as the server will
   (`node <entry>`) and waits for it to listen. If it crashes on startup, publishing **stops on your
@@ -779,23 +791,40 @@ publish, do a quick pass over what you touched:
 1. **Every interactive element and every meaningful block gets a `data-testid` that is unique on
    the page.** Interactive = button, link, input, select, tab, menu item, toggle. Meaningful block
    = card, section, chart, table row, list item, dialog. Use kebab-case, named by area + thing
-   (+ action): `needs-attention-dismiss`, `insights-plan-outline`, `library-add-source`.
-2. **Repeated items use the item's own id, never its index**: `conversation-row-c15`, not
+   (+ action): `needs-attention-dismiss`, `insights-plan-outline`, `library-add-source`. Put the
+   hook **on the element itself**, not only on a wrapper: a comment pins to the element that was
+   clicked.
+2. **Repeated items use the item's own data id, never its index**: `conversation-row-c15`, not
    `conversation-row-5`. An index points at a different item as soon as the list re-sorts or
    filters.
 3. **No state in the id**: `nav-insights`, not `nav-insights-active`. State belongs in
    `aria-selected` / `data-state`, which the widget ignores on purpose.
-4. **Charts and visual-only elements are the most important case** (they have no text to match):
-   tag each bar, series, legend item, and data point, e.g. `topics-bar-covered-thinly`.
-5. **Icon-only buttons get an `aria-label`** ("Dismiss", "More actions"). It feeds the widget's
-   text + role match and is correct accessibility anyway.
-6. Don't reuse one testid for two elements, and don't strip existing ones. `data-test`, `data-cy`,
-   and `data-qa` work the same way if the project already uses one of those.
+4. **An `id` counts as a hook only when it looks hand-written**: 2 to 40 letters and single
+   hyphens, unique on the page (`billing-form`). Anything with a digit, underscore or dot (`btn2`,
+   `css-1dbjc4n`, `form_1`) looks generated: add a `data-testid`.
+5. **Keep visible text stable.** A comment left on another state of a page (another tab, filter
+   or query string, such as `?tab=insights`) is pinned on the state you are viewing only when its
+   element has a hook AND still shows the same text; otherwise it is listed under "Other states of
+   this page".
+6. **Charts and visual-only elements are the most important case** (they have no text to match):
+   tag each bar, series, legend item, and data point, e.g. `topics-bar-covered-thinly`, and give
+   each an `aria-label` so it has text a cross-state pin can check.
+7. **Icon-only buttons and other text-less elements get an `aria-label`** ("Dismiss", "More
+   actions"). It feeds the widget's text + role match and is correct accessibility anyway.
+8. **Dialogs, popovers, tab panels, menus and disclosures get an accessible name** (`aria-label`
+   or `aria-labelledby`), and their trigger gets a hook plus the standard relationship:
+   `aria-controls`, `popovertarget`, `commandfor`, a `<summary>` inside `<details>`, or
+   `role="tab"`.
+9. **Hash routes (`/#/settings`) work, but real paths (`/settings`) are preferred.**
+10. Don't reuse one testid for two elements, and don't strip existing ones. `data-test-id`,
+    `data-test`, `data-cy`, and `data-qa` work the same way if the project already uses one of
+    those.
 
 When you address review feedback (below), keep the tags of the elements you change: a comment on
 v3 stays pinned to v3 either way, but stable tags let the next round of comments land precisely too.
 
-**The CLI keeps these rules in the repo for you** (artor-cli 0.30.0+). `artor init` and every
+**The CLI keeps these rules in the repo for you** (artor-cli 0.30.0+; 0.31.0+ writes the rules
+above). `artor init` and every
 `artor publish` write a managed "Review anchors (Artor)" block into the prototype's `AGENTS.md`
 (or `CLAUDE.md` when that is the only instructions file; both when both exist, unless `CLAUDE.md`
 imports `@AGENTS.md`), creating `AGENTS.md` if neither exists. It is idempotent: a line like
@@ -903,7 +932,9 @@ threads from the CLI and act on them — no dashboard needed.
    ```
 
    The JSON payload carries `ref`, `version`, `deploymentId`, and a `threads` array. Each thread
-   carries its `resolved` and `aiIgnored` states, the page `route`, the pin offset
+   carries its `resolved` and `aiIgnored` states, the page `route` (path plus query string, and
+   the hash route on a hash-routed app, such as `/?tab=insights` or `/#/settings`: open that exact
+   state to see what the comment was about), the pin offset
    (`offsetXPct`/`offsetYPct`), element-anchor hints
    (`anchorText`/`anchorRole`/`elementSelector`/`scrollY`), and the `comments`
    (author + body + `createdAt`). `--open` is the actionable set; drop it (or omit `--json`) for the
@@ -1056,6 +1087,16 @@ closed garden, so treat it carefully.
   the review widget at create time - members will still see it. Change it from the dashboard, or
   update the server." and still exits 0 - the link was created as requested, this control just
   didn't apply; relay that honestly.
+- **Link previews of a password-protected link** (artor-cli **0.31.0+**). When a protected link
+  is pasted into Slack, iMessage or similar, its preview card hides the prototype by default.
+  `artor share add|set <share> --preview-name on|off` reveals the prototype name and
+  `--preview-image on|off` a screenshot (with a lock badge). An open link always shows both, so
+  the switches only take effect while the link has a password (setting one on an open link is
+  stored, and the CLI says so). A preview flag alone is a valid `share set`. `share list` shows
+  `preview: name + screenshot|name|screenshot|hidden` on a protected link (`--json`:
+  `previewShowName`, `previewShowImage`). Against an older server, `share add` still creates the
+  link and says the preview stays hidden (exit 0); `share set` says nothing changed and exits 1 -
+  relay that honestly.
 - **`--mode pinned`** ties the link to **one fixed version** (pass `--deployment <id>`) — its bytes
   never change. **`--mode latest`** (the default) follows the newest publish.
 - **Duration** is `--days N` (default 7); the server clamps it to the org cap and platform ceiling
