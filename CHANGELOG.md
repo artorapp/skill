@@ -7,6 +7,28 @@ uses pre-1.0 (0.x) semver — new user-visible capability bumps MINOR, fixes/doc
 After a version bump, users pull it with `claude plugin marketplace update artor && claude plugin
 update artor@artor` (update only fires on a version bump).
 
+## [0.27.0] - 2026-09-29
+
+MINOR: review pins across page states and hash routes. The review widget now shows a comment left
+on another state of the same page (another `?tab=`, filter or hash-router query) and pins it there
+only on a strong anchor: a hook on the element itself plus unchanged visible text. The skill's
+tagging pass teaches exactly that. Cross-state pins need `@artorapp/web-sdk` 0.11.0+; artor-cli
+0.31.0+ writes the updated rules into the prototype's `AGENTS.md`.
+
+### Added
+
+- Put hooks on the element itself, not only on a wrapper.
+- `id`s with a digit do not count as hooks; word-like `id`s do.
+- Keep visible text stable; give chart parts an `aria-label` too.
+- Dialogs, popovers, tab panels, menus and disclosures need an accessible name, and their
+  trigger a hook plus `aria-controls` / `popovertarget` / `commandfor` / `<summary>` /
+  `role="tab"`.
+- Hash routes work, but real paths are preferred.
+
+### Changed
+
+- The hook list now names `data-test-id` alongside `data-test`, `data-cy` and `data-qa`.
+
 ## [0.26.0] - 2026-09-28
 
 MINOR: teaches the skill to build prototypes whose review comments stay pinned. Reviewers' pins

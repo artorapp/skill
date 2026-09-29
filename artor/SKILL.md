@@ -779,23 +779,39 @@ publish, do a quick pass over what you touched:
 1. **Every interactive element and every meaningful block gets a `data-testid` that is unique on
    the page.** Interactive = button, link, input, select, tab, menu item, toggle. Meaningful block
    = card, section, chart, table row, list item, dialog. Use kebab-case, named by area + thing
-   (+ action): `needs-attention-dismiss`, `insights-plan-outline`, `library-add-source`.
-2. **Repeated items use the item's own id, never its index**: `conversation-row-c15`, not
+   (+ action): `needs-attention-dismiss`, `insights-plan-outline`, `library-add-source`. Put the
+   hook **on the element itself**, not only on a wrapper: a comment pins to the element that was
+   clicked.
+2. **Repeated items use the item's own data id, never its index**: `conversation-row-c15`, not
    `conversation-row-5`. An index points at a different item as soon as the list re-sorts or
    filters.
 3. **No state in the id**: `nav-insights`, not `nav-insights-active`. State belongs in
    `aria-selected` / `data-state`, which the widget ignores on purpose.
-4. **Charts and visual-only elements are the most important case** (they have no text to match):
-   tag each bar, series, legend item, and data point, e.g. `topics-bar-covered-thinly`.
-5. **Icon-only buttons get an `aria-label`** ("Dismiss", "More actions"). It feeds the widget's
-   text + role match and is correct accessibility anyway.
-6. Don't reuse one testid for two elements, and don't strip existing ones. `data-test`, `data-cy`,
-   and `data-qa` work the same way if the project already uses one of those.
+4. **An `id` with a digit does not count as a hook** (it looks generated, like `btn2` or
+   `css-1dbjc4n`): add a `data-testid`. A word-like `id` (`billing-form`) works.
+5. **Keep visible text stable.** A comment left on another state of a page (another tab, filter
+   or query string, such as `?tab=insights`) is pinned on the state you are viewing only when its
+   element has a hook AND still shows the same text; otherwise it is listed under "Other states of
+   this page".
+6. **Charts and visual-only elements are the most important case** (they have no text to match):
+   tag each bar, series, legend item, and data point, e.g. `topics-bar-covered-thinly`, and give
+   each an `aria-label` so it has text a cross-state pin can check.
+7. **Icon-only buttons and other text-less elements get an `aria-label`** ("Dismiss", "More
+   actions"). It feeds the widget's text + role match and is correct accessibility anyway.
+8. **Dialogs, popovers, tab panels, menus and disclosures get an accessible name** (`aria-label`
+   or `aria-labelledby`), and their trigger gets a hook plus the standard relationship:
+   `aria-controls`, `popovertarget`, `commandfor`, a `<summary>` inside `<details>`, or
+   `role="tab"`.
+9. **Hash routes (`/#/settings`) work, but real paths (`/settings`) are preferred.**
+10. Don't reuse one testid for two elements, and don't strip existing ones. `data-test-id`,
+    `data-test`, `data-cy`, and `data-qa` work the same way if the project already uses one of
+    those.
 
 When you address review feedback (below), keep the tags of the elements you change: a comment on
 v3 stays pinned to v3 either way, but stable tags let the next round of comments land precisely too.
 
-**The CLI keeps these rules in the repo for you** (artor-cli 0.30.0+). `artor init` and every
+**The CLI keeps these rules in the repo for you** (artor-cli 0.30.0+; 0.31.0+ writes the rules
+above). `artor init` and every
 `artor publish` write a managed "Review anchors (Artor)" block into the prototype's `AGENTS.md`
 (or `CLAUDE.md` when that is the only instructions file; both when both exist, unless `CLAUDE.md`
 imports `@AGENTS.md`), creating `AGENTS.md` if neither exists. It is idempotent: a line like
