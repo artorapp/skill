@@ -787,8 +787,9 @@ publish, do a quick pass over what you touched:
    filters.
 3. **No state in the id**: `nav-insights`, not `nav-insights-active`. State belongs in
    `aria-selected` / `data-state`, which the widget ignores on purpose.
-4. **An `id` with a digit does not count as a hook** (it looks generated, like `btn2` or
-   `css-1dbjc4n`): add a `data-testid`. A word-like `id` (`billing-form`) works.
+4. **An `id` counts as a hook only when it looks hand-written**: 2 to 40 letters and single
+   hyphens, unique on the page (`billing-form`). Anything with a digit, underscore or dot (`btn2`,
+   `css-1dbjc4n`, `form_1`) looks generated: add a `data-testid`.
 5. **Keep visible text stable.** A comment left on another state of a page (another tab, filter
    or query string, such as `?tab=insights`) is pinned on the state you are viewing only when its
    element has a hook AND still shows the same text; otherwise it is listed under "Other states of
@@ -919,7 +920,9 @@ threads from the CLI and act on them — no dashboard needed.
    ```
 
    The JSON payload carries `ref`, `version`, `deploymentId`, and a `threads` array. Each thread
-   carries its `resolved` and `aiIgnored` states, the page `route`, the pin offset
+   carries its `resolved` and `aiIgnored` states, the page `route` (path plus query string, and
+   the hash route on a hash-routed app, such as `/?tab=insights` or `/#/settings`: open that exact
+   state to see what the comment was about), the pin offset
    (`offsetXPct`/`offsetYPct`), element-anchor hints
    (`anchorText`/`anchorRole`/`elementSelector`/`scrollY`), and the `comments`
    (author + body + `createdAt`). `--open` is the actionable set; drop it (or omit `--json`) for the
