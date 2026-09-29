@@ -53,19 +53,25 @@ safe to leave committed — it does nothing in production or on `localhost`.
 - Older CLIs (0.30.0 and earlier) prepended their block regardless, which could leave an entry
   with two `init` imports (or a Next layout with two `ArtorReview` imports), a file that does not
   compile. **Re-running `artor init` (0.31.0+) repairs it:** it removes only the managed block,
-  and only when that block is exactly as Artor wrote it and the rest of the file, comments aside,
-  has its own `import` of a name the block imports (`import { init }`, `import sdk, { init }`, a
-  multi-line import, `import { ArtorReview }` or a default `ArtorReview`; `import type` does not
-  count). Every other second setup keeps the block (an aliased or namespace import, `require`, a
-  dynamic import, the IIFE global, a conditional init, an HTML script, a commented-out or
-  sorter-moved import): it compiles and the widget never mounts twice. It prints `Removed a
-  duplicate Artor setup from <file> (the project already sets up @artorapp/web-sdk in <path>).`
-  On an older CLI, remove the managed block by hand and keep the project's own import. For
-  Next.js the repair also deletes the generated `artor-review.tsx` when no other file may import
-  it, else keeps it with a note. An edited managed block is never stripped or rewritten, on a
-  repair or a plain re-run: init prints `<file> has an Artor web-sdk block that was edited (by
-  hand or by a tool), so it was left as is. ...`; delete the block, marker lines included, and
-  re-run. A generated `artor-review.tsx` changed by hand is never overwritten.
+  and only when that block is exactly as Artor wrote it and the file's leading imports (read
+  from the top, past comments, directives, side-effect imports and re-exports) include its own
+  `import`, from any module, of a name the block imports (`import { init }`, `import sdk, { init }`,
+  a multi-line import, `import * as init`, `import { ArtorReview }` or a default `ArtorReview`;
+  `import type` does not count). Every other second setup keeps the block (an aliased import, a
+  differently named namespace import, `require`, a dynamic import, the IIFE global, a
+  conditional init, an HTML script, a commented-out or sorter-moved import): the widget never
+  mounts twice, so it is harmless. A same-name top-level `const`/`function` next to the block is
+  not repaired: delete the block by hand. It prints `Removed a duplicate Artor setup from <file>
+  (the project already sets up @artorapp/web-sdk in <path>).` On an older CLI, remove the managed
+  block by hand and keep the project's own import. For Next.js the repair also deletes the
+  generated `artor-review.tsx` when no other file may import it, else keeps it with a note.
+  A file that already imports its own `init` from another module (or a layout its own
+  `ArtorReview`) is never wired: init writes nothing and prints `<file> already imports its own
+  ...`, with the fix (import the SDK's `init` as `artorInit`, or rename the layout's import).
+  An edited managed block is never stripped or rewritten, on a repair or a plain re-run: init
+  prints `<file> has an Artor web-sdk block that was edited (by hand or by a tool), so it was left
+  as is. ...`; delete the block, marker lines included, and re-run. A generated `artor-review.tsx`
+  changed by hand is never overwritten.
 
 ## Manual wiring
 
