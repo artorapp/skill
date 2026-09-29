@@ -53,12 +53,18 @@ safe to leave committed — it does nothing in production or on `localhost`.
 - Older CLIs (0.30.0 and earlier) prepended their block regardless, which could leave an entry
   with two `init` imports. **Re-running `artor init` (0.31.0+) repairs it:** it removes only the
   managed block next to the project's own setup, and only when that setup still starts the SDK
-  itself (an `init` it imports is called, `ArtorWebSdk.init`, its own `<ArtorReview>`, or the
-  app-served script) and the managed block is untouched: a commented-out or sorter-moved import, or
-  a bare `import "@artorapp/web-sdk"`, is left alone. It prints `Removed a duplicate Artor setup from
-  <file> (the project already sets up @artorapp/web-sdk in <path>).` On an older CLI, remove the
+  itself, unconditionally at the top level of the file (an `init` it imports is called, or
+  `ArtorWebSdk.init`, not behind a condition, inside a function or in a string; its own
+  `<ArtorReview>` rendered directly; or the app-served script) and the managed block is
+  untouched: a commented-out or sorter-moved import, or a bare `import "@artorapp/web-sdk"`, is
+  left alone. It prints `Removed a duplicate Artor setup from <file> (the project already sets up
+  @artorapp/web-sdk in <path>).` On an older CLI, remove the
   managed block by hand and keep the project's own import. For Next.js the repair also deletes the
   generated `artor-review.tsx` when no other file may import it, else keeps it with a note.
+  An edited managed block is never stripped or rewritten, on a repair or a plain re-run: init
+  prints `<file> has an Artor web-sdk block that was edited (by hand or by a tool), so it was left
+  as is. ...`; delete the block, marker lines included, and re-run. A generated `artor-review.tsx`
+  changed by hand is never overwritten.
 
 ## Manual wiring
 
