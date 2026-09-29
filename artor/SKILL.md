@@ -562,8 +562,11 @@ works identically; a deck is just a project whose `kind` is `"slides"` instead o
   patch fails loud asking for `--yes` and a real mock conflict fails loud asking for
   `--mocks=local|server`. Read `version` and `url` from the object rather than parsing prose.
 - It auto-detects the framework: Next/SSR → **node-server** (static AND dynamic/API routes),
-  pure-static frameworks → **static**. Force with `--static` / `--node`; pass `--dir <path>` for a
-  non-standard output dir, `--entry <file>` for a node-server's entry. The build uses the project's
+  pure-static frameworks (Vite, CRA, Astro, Angular, ...) → **static**. Force with `--static` /
+  `--node`; pass `--dir <path>` for a non-standard output dir, `--entry <file>` for a node-server's
+  entry. **Angular** (artor-cli 0.31.0+) reads its output dir from `angular.json`, so no `--dir`;
+  an Angular app that renders on the server stops before building and asks for `--static`, which
+  publishes the browser build only (no server routes): confirm with the designer before adding it. The build uses the project's
   own package manager (npm, pnpm, yarn, or Bun — detected from the lockfile each publish).
 - **A live app is boot-tested before upload** — Artor starts it exactly as the server will
   (`node <entry>`) and waits for it to listen. If it crashes on startup, publishing **stops on your

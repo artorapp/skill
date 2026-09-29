@@ -27,6 +27,18 @@ tagging pass teaches exactly that. Cross-state pins need `@artorapp/web-sdk` 0.1
   `role="tab"`.
 - Hash routes work, but real paths are preferred.
 
+- Angular (artor-cli 0.31.0+): `artor init` wires the review widget into `src/main.ts`, and
+  `artor publish` reads the output dir from `angular.json`. An Angular app that renders on the
+  server stops before building and asks for `--static`, which publishes the browser build only;
+  the skill says to confirm that with the designer first.
+- Review widget reference: `artor init` (artor-cli 0.31.0+) leaves an existing
+  `@artorapp/web-sdk` setup alone (an entry import in any form, `ArtorWebSdk.init`, or a
+  `<script>` tag in `index.html`), never declares the dependency twice or changes a pin, and a
+  re-run changes nothing. Includes how to repair an entry an older CLI left with two `init`
+  imports.
+- Review widget reference: Vite (`src/main.jsx` / `.js`) and CRA (`src/index.jsx` / `.js`)
+  JavaScript entries are wired automatically from artor-cli 0.31.0.
+
 ### Changed
 
 - The hook list now names `data-test-id` alongside `data-test`, `data-cy` and `data-qa`.

@@ -20,9 +20,29 @@ safe to leave committed — it does nothing in production or on `localhost`.
 - **Next.js App Router** — `artor init` writes a managed `"use client"` `ArtorReview` component file
   alongside your root layout and inserts `<ArtorReview />` right after the opening `<body>` tag. The
   component calls `init()` inside `useEffect` and returns `null`.
-- **Next.js Pages Router / Vite / CRA** — `artor init` prepends a guarded
+- **Next.js Pages Router / Vite / CRA / Angular**: `artor init` prepends a guarded
   `import { init } from "@artorapp/web-sdk"; if (typeof window !== "undefined") init();` block to the
-  detected entry file (`_app.tsx`, `main.tsx`, `src/index.tsx`, etc.).
+  detected entry file: `pages/_app.tsx`; Vite `src/main.tsx`, `.ts`, `.jsx` or `.js` (a JS entry,
+  e.g. a default Vue app, is wired from artor-cli 0.31.0); CRA `src/index.tsx`, `.ts`, `.jsx` or
+  `.js`; Angular `src/main.ts` (artor-cli 0.31.0+).
+
+## An existing setup is left alone (artor-cli 0.31.0+)
+
+- **`artor init` never edits a project that already sets the widget up.** Any import of
+  `@artorapp/web-sdk` in the entry (named, aliased, namespace, side-effect, a subpath, `import()`
+  or `require`), a call to `ArtorWebSdk.init`, or an `index.html` (root, `public/` or `src/`) with
+  a `<script>` loading the SDK counts, and so does a commented-out import. init prints
+  `@artorapp/web-sdk is already set up in <file>; left it unchanged.` For Next.js, a layout that
+  already renders `<ArtorReview>` counts, and an `artor-review.tsx` Artor did not generate is never
+  overwritten. Don't "fix" such a project by adding a second `import { init }`: it won't compile.
+- **The dependency is declared once.** `"@artorapp/web-sdk": "latest"` goes into
+  `devDependencies` only when no section (`dependencies`, `devDependencies`, `peerDependencies`,
+  `optionalDependencies`) declares it; an existing version or pin (`^0.11.0`, `file:`,
+  `workspace:*`) is never changed. A `<script>` that loads the SDK by URL needs no dependency, so
+  none is added. Re-running `artor init` leaves every file byte-identical.
+- Older CLIs (0.30.0 and earlier) prepended their block regardless, which could leave an entry
+  with two `init` imports. If you find one, remove the managed block and keep the project's own
+  import.
 
 ## Manual wiring
 
@@ -34,7 +54,7 @@ or no known entry file), add the call by hand in the framework's client entry:
 import { init } from "@artorapp/web-sdk";
 useEffect(() => init().teardown, []);
 
-// Pages Router / Vite / CRA — top of the client entry file:
+// Pages Router / Vite / CRA / Angular: top of the client entry file:
 import { init } from "@artorapp/web-sdk";
 if (typeof window !== "undefined") init();
 ```
