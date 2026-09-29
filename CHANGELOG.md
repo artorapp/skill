@@ -13,7 +13,8 @@ MINOR: review pins across page states and hash routes. The review widget now sho
 on another state of the same page (another `?tab=`, filter or hash-router query) and pins it there
 only on a strong anchor: a hook on the element itself plus unchanged visible text. The skill's
 tagging pass teaches exactly that. Cross-state pins need `@artorapp/web-sdk` 0.11.0+; artor-cli
-0.31.0+ writes the updated rules into the prototype's `AGENTS.md` / `CLAUDE.md`.
+0.31.0+ writes the updated rules into the prototype's agent instruction files (`AGENTS.md` and the
+like).
 
 ### Added
 
