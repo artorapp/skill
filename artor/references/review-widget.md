@@ -24,25 +24,37 @@ safe to leave committed — it does nothing in production or on `localhost`.
   `import { init } from "@artorapp/web-sdk"; if (typeof window !== "undefined") init();` block to the
   detected entry file: `pages/_app.tsx` or `src/pages/_app.tsx`; Vite `src/main.tsx`, `.ts`, `.jsx` or `.js` (a JS entry,
   e.g. a default Vue app, is wired from artor-cli 0.31.0); CRA `src/index.tsx`, `.ts`, `.jsx` or
-  `.js`; Angular `src/main.ts` (artor-cli 0.31.0+).
+  `.js`; Angular: the browser entry `angular.json` names for the project `ng build` selects
+  (`browser`, or `main` on the browser builders), else `src/main.ts` (artor-cli 0.31.0+).
 
 ## An existing setup is left alone (artor-cli 0.31.0+)
 
 - **`artor init` never edits a project that already sets the widget up.** Any import of
   `@artorapp/web-sdk` in the entry (named, aliased, namespace, side-effect, a subpath, `import()`
-  or `require`), a call to `ArtorWebSdk.init`, or an `index.html` (root, `public/` or `src/`) with
-  a `<script>` loading the SDK counts, and so does a commented-out import. init prints
+  with or without a bundler magic comment, or `require`), a call to `ArtorWebSdk.init` (also
+  `ArtorWebSdk?.init(`, `ArtorWebSdk.init?.(` or `window["ArtorWebSdk"].init(`), or an
+  `index.html` (root, `public/` or `src/`) with a `<script>` loading the SDK counts, and so does a
+  commented-out import. A type-only import (`import type`, `export type ... from`, or
+  `import { type A }` where every name is type-only) loads nothing at runtime, so it does NOT
+  count: init wires the entry and keeps it. init prints
   `@artorapp/web-sdk is already set up in <file>; left it unchanged.` For Next.js, a layout that
   already renders `<ArtorReview>` counts, and an `artor-review.tsx` Artor did not generate is never
   overwritten. Don't "fix" such a project by adding a second `import { init }`: it won't compile.
+- **Only the entry and the HTML pages are checked.** A setup in another file (a module the entry
+  imports) is not seen, so init wires the entry too; remove one of the two.
 - **The dependency is declared once.** `"@artorapp/web-sdk": "latest"` goes into
   `devDependencies` only when no section (`dependencies`, `devDependencies`, `peerDependencies`,
   `optionalDependencies`) declares it; an existing version or pin (`^0.11.0`, `file:`,
   `workspace:*`) is never changed. A `<script>` that loads the SDK by URL needs no dependency, so
-  none is added. Re-running `artor init` leaves every file byte-identical.
+  none is added. The line is inserted as a minimal text edit (key order, indent, line endings and
+  a BOM are kept); a package.json that can't be edited safely (invalid JSON, not an object, or a
+  non-object `devDependencies`) is left as is with a warning naming the line to add. Re-running
+  `artor init` leaves every file byte-identical, except the repair below.
 - Older CLIs (0.30.0 and earlier) prepended their block regardless, which could leave an entry
-  with two `init` imports. If you find one, remove the managed block and keep the project's own
-  import.
+  with two `init` imports. **Re-running `artor init` (0.31.0+) repairs it:** it removes only the
+  managed block next to the project's own setup and prints `Removed a duplicate Artor setup from
+  <file> (the project already sets up @artorapp/web-sdk in <path>).` On an older CLI, remove the
+  managed block by hand and keep the project's own import.
 
 ## Manual wiring
 

@@ -547,7 +547,10 @@ works identically; a deck is just a project whose `kind` is `"slides"` instead o
 ## Publishing notes
 
 - **`artor publish` builds on demand** — it rebuilds from clean by default, so you do **not** need
-  to run `npm run build` first. Pass `--no-build` to reuse an existing build output.
+  to run `npm run build` first. Pass `--no-build` to reuse an existing build output; the
+  framework's own output dir wins, and if several output dirs exist (`dist`, `out`, `build`)
+  publish warns naming the one it packs: pass `--dir <path>` to choose another (a build configured
+  to write elsewhere always needs `--dir` with `--no-build`).
 - **`--alias <name>` (short `-v`) is the canonical way to name the movable alias.** `--version
   <name>` still sets the alias but is **deprecated on publish and warns once on stderr** - the same
   spelling means a version NUMBER everywhere else (`artor open --version 3`) and the CLI's own
@@ -564,9 +567,14 @@ works identically; a deck is just a project whose `kind` is `"slides"` instead o
 - It auto-detects the framework: Next/SSR → **node-server** (static AND dynamic/API routes),
   pure-static frameworks (Vite, CRA, Astro, Angular, ...) → **static**. Force with `--static` /
   `--node`; pass `--dir <path>` for a non-standard output dir, `--entry <file>` for a node-server's
-  entry. **Angular** (artor-cli 0.31.0+) reads its output dir from `angular.json`, so no `--dir`;
-  an Angular app that renders on the server stops before building and asks for `--static`, which
-  publishes the browser build only (no server routes): confirm with the designer before adding it. The build uses the project's
+  entry. **Angular** (artor-cli 0.31.0+) is detected by `angular.json` at the root plus an
+  Angular builder package (`@angular/build`, `@angular-devkit/build-angular`, `@angular-builders/*`),
+  never over Astro or Analog; it reads its output dir from `angular.json` for the project the
+  `ng build` in `scripts.build` selects, so no `--dir`. An Nx workspace (no angular.json) gets the
+  generic handling: pass `--dir` with the browser output dir. An Angular app whose build also
+  produces a server bundle (SSR, or a server entry used only to prerender at build time) stops
+  before building and asks for `--static`, which publishes the browser build only (no server
+  routes): confirm with the designer before adding it. The build uses the project's
   own package manager (npm, pnpm, yarn, or Bun — detected from the lockfile each publish).
 - **A live app is boot-tested before upload** — Artor starts it exactly as the server will
   (`node <entry>`) and waits for it to listen. If it crashes on startup, publishing **stops on your

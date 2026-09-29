@@ -27,15 +27,25 @@ tagging pass teaches exactly that. Cross-state pins need `@artorapp/web-sdk` 0.1
   `role="tab"`.
 - Hash routes work, but real paths are preferred.
 
-- Angular (artor-cli 0.31.0+): `artor init` wires the review widget into `src/main.ts`, and
-  `artor publish` reads the output dir from `angular.json`. An Angular app that renders on the
-  server stops before building and asks for `--static`, which publishes the browser build only;
-  the skill says to confirm that with the designer first.
+- Angular (artor-cli 0.31.0+): `artor init` wires the review widget into the browser entry
+  `angular.json` names (else `src/main.ts`), and `artor publish` reads the output dir from
+  `angular.json` for the project the `ng build` in `scripts.build` selects. Detection needs
+  `angular.json` plus an Angular builder package and never overrides Astro or Analog; an Nx
+  workspace (no angular.json) needs `--dir`. An Angular app whose build also produces a server
+  bundle (SSR, or a server entry used only to prerender at build time) stops before building and
+  asks for `--static`, which publishes the browser build only; the skill says to confirm that
+  with the designer first.
 - Review widget reference: `artor init` (artor-cli 0.31.0+) leaves an existing
-  `@artorapp/web-sdk` setup alone (an entry import in any form, `ArtorWebSdk.init`, or a
-  `<script>` tag in `index.html`), never declares the dependency twice or changes a pin, and a
-  re-run changes nothing. Includes how to repair an entry an older CLI left with two `init`
-  imports.
+  `@artorapp/web-sdk` setup alone (an entry import, `import()` with a bundler magic comment,
+  `ArtorWebSdk.init` including `ArtorWebSdk?.init(`, or a `<script>` tag in `index.html`), never
+  declares the dependency twice or changes a pin, and adds the dependency as a minimal text edit
+  (or leaves an unreadable package.json alone with a warning). A type-only import (`import type`)
+  is not a setup, and a setup outside the entry and the HTML pages is not seen.
+- Review widget reference: re-running `artor init` (artor-cli 0.31.0+) repairs an entry an older
+  CLI left with two `init` imports, removing only the managed block (`Removed a duplicate Artor
+  setup from <file> ...`); otherwise a re-run changes nothing.
+- Publishing notes: `--no-build` warns when several output dirs exist and names the one it
+  packs; pass `--dir` to choose another.
 - Review widget reference: Vite (`src/main.jsx` / `.js`) and CRA (`src/index.jsx` / `.js`)
   JavaScript entries are wired automatically from artor-cli 0.31.0.
 
