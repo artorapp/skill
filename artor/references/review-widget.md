@@ -22,7 +22,7 @@ safe to leave committed — it does nothing in production or on `localhost`.
   component calls `init()` inside `useEffect` and returns `null`.
 - **Next.js Pages Router / Vite / CRA / Angular**: `artor init` prepends a guarded
   `import { init } from "@artorapp/web-sdk"; if (typeof window !== "undefined") init();` block to the
-  detected entry file: `pages/_app.tsx`; Vite `src/main.tsx`, `.ts`, `.jsx` or `.js` (a JS entry,
+  detected entry file: `pages/_app.tsx` or `src/pages/_app.tsx`; Vite `src/main.tsx`, `.ts`, `.jsx` or `.js` (a JS entry,
   e.g. a default Vue app, is wired from artor-cli 0.31.0); CRA `src/index.tsx`, `.ts`, `.jsx` or
   `.js`; Angular `src/main.ts` (artor-cli 0.31.0+).
 
