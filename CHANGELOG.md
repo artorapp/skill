@@ -28,9 +28,9 @@ review widget do. Needs artor-cli 0.31.1 or later; older CLIs still print a lowe
 ### Fixed
 
 - `/artor:share` now says `--hide-widget` hides the review widget for everyone who opens the link,
-  guests included (so nobody can comment through it), not only signed-in organization members.
-  The flag always behaved this way; artor-cli 0.31.1 corrects its own help text and create output
-  to match.
+  guests included (nobody gets the in-page review widget through it), not only signed-in
+  organization members. The flag always behaved this way; artor-cli 0.31.1 corrects its own help text and create output
+  (including the older-server fallback line, now "everyone will still see it") to match.
 
 ## [0.27.0] - 2026-09-29
 

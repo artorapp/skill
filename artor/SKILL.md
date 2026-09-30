@@ -1083,14 +1083,14 @@ closed garden, so treat it carefully.
   when minting with `artor share add --password-stdin`, and set, change or remove one on a **live**
   link with `artor share set <share> --password-stdin` / `--remove-password`. See "Link passwords"
   below for how to run it unattended.
-- **Hide the review widget from signed-in members** with `artor share add --hide-widget` (a
-  valueless boolean flag; `--hide-widget=true` is refused, not silently dropped). Use it when a
-  user asks for a clean demo link with no review widget for their teammates - the link still
-  works normally for any visitor, this only hides Artor's own in-page comment widget for
-  organization members who open it. Default is shown. It matches the dashboard Edit dialog's
-  "Show the review widget" switch, off, and can also be changed later from that dialog. Against
+- **Hide the review widget on a link** with `artor share add --hide-widget` (a valueless boolean
+  flag; `--hide-widget=true` is refused, not silently dropped). Use it when a user asks for a clean
+  demo link with no review widget - the link still works normally for any visitor, this only hides
+  Artor's own in-page comment widget for everyone who opens it, guests included. Default is
+  shown. It matches the dashboard Edit dialog's "Show the review widget" switch, off, and can also
+  be changed later from that dialog. Against
   an older server that ignores the field, `share add` prints "This server doesn't support hiding
-  the review widget at create time - members will still see it. Change it from the dashboard, or
+  the review widget at create time - everyone will still see it. Change it from the dashboard, or
   update the server." and still exits 0 - the link was created as requested, this control just
   didn't apply; relay that honestly.
 - **Link previews of a password-protected link** (artor-cli **0.31.0+**). When a protected link
