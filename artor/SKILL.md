@@ -596,6 +596,12 @@ works identically; a deck is just a project whose `kind` is `"slides"` instead o
   view it with no login, use `artor share` (below).
 - Publishing prints the assigned version number and preview URL (and any aliases moved). Report
   exactly what the CLI returns — never invent a version or URL.
+- **Version labels (artor-cli 0.31.1+).** Human-readable output writes a version as an uppercase
+  `V{n}`: `Published "checkout" V4`, the `artor project list` VERSION column, the `artor comments`
+  header, `artor logs`, the pull, remix and dump lines, `mock revisions` and `mock promote`. It is
+  a label, not input: type the digits (`--version 4`, `--ref 4`), since `V4` or `v4` as a ref is
+  looked up as an alias. `--json` keeps `version` a bare number; URLs, aliases and the dump folder
+  layout (`<out>/<slug>/v<n>/`) are unchanged. Older CLIs print a lowercase `v{n}`.
 - **Versions are usually immutable, but a small tweak can overwrite one in place.** By default, a
   new `artor publish` mints a fresh, permanent version — to move a shared link's target, point an
   alias at it (`--alias <name>`; `latest` always tracks the newest publish unless you overwrite it
@@ -1077,14 +1083,14 @@ closed garden, so treat it carefully.
   when minting with `artor share add --password-stdin`, and set, change or remove one on a **live**
   link with `artor share set <share> --password-stdin` / `--remove-password`. See "Link passwords"
   below for how to run it unattended.
-- **Hide the review widget from signed-in members** with `artor share add --hide-widget` (a
-  valueless boolean flag; `--hide-widget=true` is refused, not silently dropped). Use it when a
-  user asks for a clean demo link with no review widget for their teammates - the link still
-  works normally for any visitor, this only hides Artor's own in-page comment widget for
-  organization members who open it. Default is shown. It matches the dashboard Edit dialog's
-  "Show the review widget" switch, off, and can also be changed later from that dialog. Against
+- **Hide the review widget on a link** with `artor share add --hide-widget` (a valueless boolean
+  flag; `--hide-widget=true` is refused, not silently dropped). Use it when a user asks for a clean
+  demo link with no review widget - the link still works normally for any visitor, this only hides
+  Artor's own in-page comment widget for everyone who opens it, guests included. Default is
+  shown. It matches the dashboard Edit dialog's "Show the review widget" switch, off, and can also
+  be changed later from that dialog. Against
   an older server that ignores the field, `share add` prints "This server doesn't support hiding
-  the review widget at create time - members will still see it. Change it from the dashboard, or
+  the review widget at create time - everyone will still see it. Change it from the dashboard, or
   update the server." and still exits 0 - the link was created as requested, this control just
   didn't apply; relay that honestly.
 - **Link previews of a password-protected link** (artor-cli **0.31.0+**). When a protected link

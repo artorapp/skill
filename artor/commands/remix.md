@@ -22,7 +22,7 @@ artor remix <project> [name] [--org <slug>] [--ref <r>] [--dir <p>]
   unless you pass `--dir`; it must be an **empty** directory.
 - The CLI fetches the source, creates the new project, unpacks it, writes a fresh `.artor` link, and
   re-derives the org registry `.npmrc` best-effort (so private packages install without the upstream
-  credential). It prints `✓ Remixed <src>[ v<n>] → <slug> (./<dir>/).`
+  credential). It prints `✓ Remixed <src>[ V<n>] → <slug> (./<dir>/).` (lowercase `v<n>` before artor-cli 0.31.1).
 
 ## 2. Install dependencies
 

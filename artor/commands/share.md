@@ -35,7 +35,7 @@ artor share add --mode pinned --deployment <id> [--days N] [--comments off|anony
 # With a link password (see "Link passwords" below - pipe it, never put it in argv):
 printf '%s' "$PW" | artor share add --password-stdin
 
-# With the review widget hidden from signed-in organization members:
+# With the review widget hidden for everyone who opens the link, guests included:
 artor share add --hide-widget
 ```
 
@@ -65,13 +65,14 @@ artor share add --hide-widget
   em-dash variant, `(off — reshare to copy)` - match either); an **expired** or **legacy**
   (pre-encryption) row shows `(reshare to copy)` — those have no recoverable URL, so re-add for a
   fresh one.
-- **`--hide-widget`** creates the link with Artor's in-page review widget hidden from signed-in
-  organization members who open it (a valueless boolean flag; `--hide-widget=true` is refused, not
+- **`--hide-widget`** creates the link with Artor's in-page review widget hidden for everyone who
+  opens it, guests included (a valueless boolean flag; `--hide-widget=true` is refused, not
   silently dropped). Default is shown. Use it when the user wants a clean demo link with no review
-  widget for their teammates - it doesn't affect the prototype itself or guest commenting. It
+  widget - it doesn't change the prototype itself, and nobody gets the in-page review widget
+  through that link. It
   matches the dashboard Edit dialog's "Show the review widget" switch, off, and can be changed
   later from that dialog. Against an older server that ignores the field, `share add` prints "This
-  server doesn't support hiding the review widget at create time - members will still see it.
+  server doesn't support hiding the review widget at create time - everyone will still see it.
   Change it from the dashboard, or update the server." and still exits 0.
 - **`--days N`** sets duration (default 7). The server clamps it to the org cap and the platform
   ceiling (≤ 90 days). **`--warn`** emails the sharer ~24h before expiry.

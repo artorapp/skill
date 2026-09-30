@@ -7,6 +7,31 @@ uses pre-1.0 (0.x) semver — new user-visible capability bumps MINOR, fixes/doc
 After a version bump, users pull it with `claude plugin marketplace update artor && claude plugin
 update artor@artor` (update only fires on a version bump).
 
+## [0.28.0] - 2026-09-30
+
+MINOR: human-readable CLI output labels versions as an uppercase `V{n}`, as the dashboard and the
+review widget do. Needs artor-cli 0.31.1 or later; older CLIs still print a lowercase `v{n}`.
+
+### Changed
+
+- The skill now reads version labels as `V{n}` in human-readable output: the publish success line
+  (`Published "checkout" V4`), the `artor project list` VERSION column, the `artor comments`
+  header, the `artor logs` heading and `No logs captured for V3.`, the `artor pull` and
+  `artor remix` success lines, the `artor dump` per-version line, `artor mock revisions` and
+  `artor mock promote`.
+- `/artor:remix` quotes the success line as `✓ Remixed <src>[ V<n>] → <slug> (./<dir>/).`
+- New note: `V{n}` is a label, not input. A version number is still typed as digits
+  (`--version 4`, `--ref 4`); `V4` or `v4` as a ref is looked up as an alias.
+- Unchanged: `--json` output (`version` stays a bare number), URLs, aliases and the `artor dump`
+  folder layout (`<out>/<slug>/v<n>/`).
+
+### Fixed
+
+- `/artor:share` now says `--hide-widget` hides the review widget for everyone who opens the link,
+  guests included (nobody gets the in-page review widget through it), not only signed-in
+  organization members. The flag always behaved this way; artor-cli 0.31.1 corrects its own help text and create output
+  (including the older-server fallback line, now "everyone will still see it") to match.
+
 ## [0.27.0] - 2026-09-29
 
 MINOR: review pins across page states and hash routes. The review widget now shows a comment left
