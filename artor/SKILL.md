@@ -596,6 +596,12 @@ works identically; a deck is just a project whose `kind` is `"slides"` instead o
   view it with no login, use `artor share` (below).
 - Publishing prints the assigned version number and preview URL (and any aliases moved). Report
   exactly what the CLI returns — never invent a version or URL.
+- **Version labels (artor-cli 0.31.1+).** Human-readable output writes a version as an uppercase
+  `V{n}`: `Published "checkout" V4`, the `artor project list` VERSION column, the `artor comments`
+  header, `artor logs`, the pull, remix and dump lines, `mock revisions` and `mock promote`. It is
+  a label, not input: type the digits (`--version 4`, `--ref 4`), since `V4` or `v4` as a ref is
+  looked up as an alias. `--json` keeps `version` a bare number; URLs, aliases and the dump folder
+  layout (`<out>/<slug>/v<n>/`) are unchanged. Older CLIs print a lowercase `v{n}`.
 - **Versions are usually immutable, but a small tweak can overwrite one in place.** By default, a
   new `artor publish` mints a fresh, permanent version — to move a shared link's target, point an
   alias at it (`--alias <name>`; `latest` always tracks the newest publish unless you overwrite it
