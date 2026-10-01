@@ -113,5 +113,5 @@ own project and updated). `--no-sdk-update` skips it for one run. Re-running `ar
 **not** update an installed SDK. Old versions keep their old widget by design; to move a shared link
 onto the new build, move an alias (`artor publish --alias <name>`).
 
-Older CLIs asked before updating on a terminal unless `--yes` was given, and skipped the update in
-unattended runs; on an older CLI, run `artor update` first.
+Older CLIs asked before updating on a terminal unless `--yes` was given, and skipped unattended
+runs without `--yes`; on an older CLI, run `artor update` first.

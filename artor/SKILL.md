@@ -714,8 +714,8 @@ works identically; a deck is just a project whose `kind` is `"slides"` instead o
   the pack of the uploaded source snapshot, so `artor pull` gets the lockfile that built the
   widget. It puts the literal `"latest"` back in `package.json` and refreshes the lockfile, so a
   frozen install still passes, and it never fails the publish (a failure is one warning). Older
-  CLIs asked on a terminal unless `--yes` was given and skipped the update in unattended runs: on
-  an older CLI, run `artor update` first.
+  CLIs asked on a terminal unless `--yes` was given and skipped unattended runs without `--yes`:
+  on an older CLI, run `artor update` first.
   - A prebuilt publish (`--dir`, `--node`, `--no-build`, or a static folder published from its
     root) ships the widget it was built with: no update, one line, reported `skipped`.
   - Inside a workspace (no lockfile in the prototype folder, a workspace or lockfile above it),
