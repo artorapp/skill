@@ -93,14 +93,21 @@ The widget mounts on Artor preview origins only (`{previewId}.preview.{host}`). 
 
 ## Updating the widget
 
-The SDK is bundled into each published version and frozen there (versions are immutable), so there
-is no in-place upgrade — bump the dependency and publish a new version:
+The SDK is bundled into each published version and frozen there (versions are immutable). With
+the dependency declared `"latest"` (the `artor init` default), `artor publish` updates it
+automatically on every publish that runs the build (before the build, the artifact pack and the
+pack of the uploaded source snapshot), restores `"latest"` and refreshes the lockfile, so updating
+is simply:
 
 ```bash
-npm i @artorapp/web-sdk@latest   # bump the pinned version (or pnpm/yarn/bun add)
-artor publish                    # re-bundles + ships the new widget as the next version
+artor publish                    # updates a "latest" web-sdk, re-bundles, ships the next version
 ```
 
-Re-running `artor init` does **not** update an already-installed SDK (it wires it on first link
-only). Old versions keep their old widget by design; to move a shared link onto the new build, move
-an alias (`artor publish -v <name>`).
+A pinned specifier (`^0.9.0`, `0.9.0`, a tag) is never changed; publish prints one line suggesting
+`"latest"`, so set it to `"latest"` in `package.json` to opt in. Don't run
+`npm i @artorapp/web-sdk@latest`: it rewrites the specifier to a caret range, which pins it. A
+prebuilt publish (`--dir`, `--node`, `--no-build`) and a prototype inside a workspace are not
+updated (one line each; in a workspace, update from the root). `--no-sdk-update` skips it for one
+run. Re-running `artor init` does **not** update an installed SDK. Old versions keep their old
+widget by design; to move a shared link onto the new build, move an alias
+(`artor publish --alias <name>`).
