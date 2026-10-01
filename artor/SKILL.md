@@ -15,8 +15,8 @@ workflows you'll drive most. **Prefer `--json` on read commands** (artor-cli ≥
 `{ "url": … }` **without** launching a browser - ideal for grabbing the preview URL headlessly).
 It prints the payload to stdout and suppresses the human rendering. Two **write** commands emit
 `--json` too: `artor publish` (one object - `version`, `url`, `aliases`, `artifactType`, `usage`
-(`null` against an older server), `webSdk` (`{ status, declared, from?, to? }`, the review widget
-auto-update outcome), plus `replaced` when the server reports it - with every progress line on
+(`null` against an older server), `webSdk` (artor-cli 0.32.0+: `{ status, declared, from?, to? }`,
+the review widget auto-update outcome), plus `replaced` when the server reports it - with every progress line on
 stderr) and `artor init`
 (`projectId`, `slug`, `name`, `orgId`, plus `spaceId`/`folderId` when it chose them). Under
 `--json` those two never prompt: it is a scripted run by contract, so a multi-org `init` needs
@@ -560,7 +560,7 @@ works identically; a deck is just a project whose `kind` is `"slides"` instead o
   `--alias` in anything you write.
 - **`artor publish --json` is the agent-facing form.** It emits exactly one JSON object on stdout:
   `{ version, url, aliases, artifactType, usage, webSdk }` (`usage` is `null` against an older
-  server; `webSdk` is the review widget auto-update outcome, see below), plus `replaced` when the
+  server; `webSdk`, artor-cli 0.32.0+, is the review widget auto-update outcome, see below), plus `replaced` when the
   server reports an overwrite. It routes every progress line,
   warning, smoke-test result, and the build/install subprocess transcript to stderr, so the payload
   stays parseable. It **never prompts**: the
@@ -585,8 +585,8 @@ works identically; a deck is just a project whose `kind` is `"slides"` instead o
   fix the build. Only re-run with `--no-smoke` if the app **legitimately** needs live
   secrets/services to boot — never as a reflex to get past a real crash. (After a successful upload,
   Artor also GETs `/` against the live URL as a warn-only check — it never fails the publish.)
-- **Publish keeps the review widget current on its own** (`@artorapp/web-sdk`, the tool reviewers
-  use to leave comments): there is no prompt to accept. If it prints that the widget is pinned,
+- **Publish keeps the review widget current on its own** (artor-cli 0.32.0+; `@artorapp/web-sdk`,
+  the tool reviewers use to leave comments): there is no prompt to accept. If it prints that the widget is pinned,
   suggest setting the dependency to `"latest"` unless the designer has a reason to hold a version
   (details in the notes below).
 - **Plain HTML, no framework, no build** — a hand-written `index.html` (plus assets) at the project
@@ -709,13 +709,15 @@ works identically; a deck is just a project whose `kind` is `"slides"` instead o
   make the file smaller. `.gitignore` and
   `.artorignore` themselves are never served.
 - **If `@artorapp/web-sdk` is declared `"latest"`** (what `artor init` writes), a publish that runs
-  the build updates it automatically whenever npm has a newer version: no prompt, TTY or not, CI
+  the build (artor-cli 0.32.0+) updates it automatically whenever npm has a newer version: no prompt, TTY or not, CI
   included, its dependency section kept. The update runs before the build, the artifact pack and
   the pack of the uploaded source snapshot, so `artor pull` gets the lockfile that built the
   widget. It puts the literal `"latest"` back in `package.json` and refreshes the lockfile, so a
-  frozen install still passes, and it never fails the publish (a failure is one warning).
-  - A prebuilt publish (`--dir`, `--node`, `--no-build`) ships the widget it was built with: no
-    update, one line, reported `skipped`.
+  frozen install still passes, and it never fails the publish (a failure is one warning). Older
+  CLIs asked on a terminal unless `--yes` was given and skipped the update in unattended runs: on
+  an older CLI, run `artor update` first.
+  - A prebuilt publish (`--dir`, `--node`, `--no-build`, or a static folder published from its
+    root) ships the widget it was built with: no update, one line, reported `skipped`.
   - Inside a workspace (no lockfile in the prototype folder, a workspace or lockfile above it),
     publish changes nothing and says so: update it from the workspace root.
   - With Yarn, if the Yarn version can't be read (`yarn --version` fails or times out and there is
@@ -730,7 +732,7 @@ works identically; a deck is just a project whose `kind` is `"slides"` instead o
   - Pass `--no-sdk-update` to skip the update for one run. `--json` prints no line for it and
     reports the outcome as `webSdk`: `{ status, declared, from?, to? }`, `status` one of
     `updated | current | pinned | skipped | failed`, `declared` the specifier before this publish
-    (`null` when the SDK isn't a dependency).
+    (`null` when the SDK isn't a dependency or `package.json` could not be read).
 - **Mock drift gate.** Before building, `artor publish` diffs the project's local `./mocks/*.json`
   files against the linked project's server-effective mock bindings. A name present on only one
   side is never a conflict (it just publishes as-is / survives untouched); a name present on
@@ -841,8 +843,8 @@ publish, do a quick pass over what you touched:
    or `aria-labelledby`), and their trigger gets a hook plus the standard relationship:
    `aria-controls`, `popovertarget`, `commandfor`, a `<summary>` inside `<details>`, or
    `role="tab"`. A comment left inside one that is closed then shows "Inside the '...' dialog"
-   (or popover, section, tab, menu), and on a thread a member left the widget can offer
-   **Open it**, which clicks that trigger; without a usable trigger it shows the hint only.
+   (or popover, section, tab, menu). When an org member left the thread, the widget can also
+   offer **Open it**, which clicks that trigger; without a usable trigger it shows the hint only.
 9. **Hash routes (`/#/settings`) work, but real paths (`/settings`) are preferred.**
 10. Don't reuse one testid for two elements, and don't strip existing ones. `data-test-id`,
     `data-test`, `data-cy`, and `data-qa` work the same way if the project already uses one of

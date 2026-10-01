@@ -93,22 +93,25 @@ The widget mounts on Artor preview origins only (`{previewId}.preview.{host}`). 
 
 ## Updating the widget
 
-The SDK is bundled into each published version and frozen there (versions are immutable). With
-the dependency declared `"latest"` (the `artor init` default), `artor publish` updates it
-automatically on every publish that runs the build (before the build, the artifact pack and the
-pack of the uploaded source snapshot), restores `"latest"` and refreshes the lockfile, so updating
-is simply:
+The SDK is bundled into each published version and frozen there (versions are immutable). With the
+dependency declared `"latest"` (the `artor init` default), `artor publish` (artor-cli 0.32.0+)
+updates it automatically on every publish that runs the build (before the build, the artifact pack
+and the pack of the uploaded source snapshot), restores `"latest"` and refreshes the lockfile, so
+updating is simply:
 
 ```bash
 artor publish                    # updates a "latest" web-sdk, re-bundles, ships the next version
 ```
 
 A pinned specifier (`^0.9.0`, `0.9.0`, a tag) is never changed; publish prints one line suggesting
-`"latest"`, so set it to `"latest"` in `package.json` to opt in. Don't run
-`npm i @artorapp/web-sdk@latest`: it rewrites the specifier to a caret range, which pins it. A
-prebuilt publish (`--dir`, `--node`, `--no-build`) is not updated (one line), and neither is a
-prototype inside a workspace with no lockfile in its own folder (one line: update it from the
-workspace root; a workspace child with its own lockfile is treated as its own project and
-updated). `--no-sdk-update` skips it for one run. Re-running `artor init` does **not** update an
-installed SDK. Old versions keep their old widget by design; to move a shared link onto the new
-build, move an alias (`artor publish --alias <name>`).
+`"latest"`, so set it to `"latest"` in `package.json` to opt in. Don't run `npm i
+@artorapp/web-sdk@latest`: it rewrites the specifier to a caret range, which pins it. A prebuilt
+publish (`--dir`, `--node`, `--no-build`, or a static folder published from its root) is not updated
+(one line), and neither is a prototype inside a workspace with no lockfile in its own folder (one
+line: update it from the workspace root; a workspace child with its own lockfile is treated as its
+own project and updated). `--no-sdk-update` skips it for one run. Re-running `artor init` does
+**not** update an installed SDK. Old versions keep their old widget by design; to move a shared link
+onto the new build, move an alias (`artor publish --alias <name>`).
+
+Older CLIs asked before updating on a terminal unless `--yes` was given, and skipped the update in
+unattended runs; on an older CLI, run `artor update` first.
