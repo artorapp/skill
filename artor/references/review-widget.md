@@ -104,10 +104,10 @@ artor publish                    # updates a "latest" web-sdk, re-bundles, ships
 ```
 
 A pinned specifier (`^0.9.0`, `0.9.0`, a tag) is never changed; publish prints one line suggesting
-`"latest"`, so set it to `"latest"` in `package.json` to opt in. Don't run `npm i
-@artorapp/web-sdk@latest`: it rewrites the specifier to a caret range, which pins it. A prebuilt
-publish (`--dir`, `--node`, `--no-build`, or a static folder published from its root) is not updated
-(one line), and neither is a prototype inside a workspace with no lockfile in its own folder (one
+`"latest"`, so set it to `"latest"` in `package.json` to opt in. Don't run
+`npm i @artorapp/web-sdk@latest`: it rewrites the specifier to a caret range, which pins it. A
+prebuilt publish (`--dir`, `--node`, `--no-build`, or a static folder published from its root) is
+not updated (one line), and neither is a prototype inside a workspace with no lockfile in its own folder (one
 line: update it from the workspace root; a workspace child with its own lockfile is treated as its
 own project and updated). `--no-sdk-update` skips it for one run. Re-running `artor init` does
 **not** update an installed SDK. Old versions keep their old widget by design; to move a shared link
