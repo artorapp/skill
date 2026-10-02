@@ -7,6 +7,29 @@ uses pre-1.0 (0.x) semver — new user-visible capability bumps MINOR, fixes/doc
 After a version bump, users pull it with `claude plugin marketplace update artor && claude plugin
 update artor@artor` (update only fires on a version bump).
 
+## [0.29.0] - 2026-10-02
+
+MINOR: `artor publish` keeps the review widget current on its own (artor-cli 0.32.0), and the
+review checklist covers comments left inside dialogs, popovers, sections, tabs and menus.
+
+### Changed
+
+- **Web-sdk auto-update.** With `@artorapp/web-sdk` declared `"latest"`, a publish that runs the
+  build (artor-cli 0.32.0+) updates it automatically, with no prompt, on a terminal or not, CI
+  included. The skill no longer tells an agent to accept a prompt; it explains the cases publish
+  skips with one line (a prebuilt publish, a prototype inside a workspace, an unreadable Yarn
+  version, a pinned specifier) and the caret-range failure warning.
+- **`publish --json` reports `webSdk`.** The object now carries
+  `webSdk: { status, declared, from?, to? }`, `status` one of
+  `updated | current | pinned | skipped | failed`.
+- **`--no-sdk-update`** is described as skipping the auto-update for one run.
+- **Updating the widget** (`references/review-widget.md`): `artor publish` alone updates a
+  `"latest"` SDK; never run `npm i @artorapp/web-sdk@latest`, which writes a caret range and pins
+  it. Older CLIs asked first: run `artor update`.
+- **Review checklist item 8**: a comment left inside a closed dialog, popover, section, tab or menu
+  shows "Inside the '...' dialog"; for an org member's thread, or a guest viewing their own, the
+  widget can offer **Open it**, which presses the recorded trigger and scrolls to the comment.
+
 ## [0.28.0] - 2026-09-30
 
 MINOR: human-readable CLI output labels versions as an uppercase `V{n}`, as the dashboard and the

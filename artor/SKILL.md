@@ -843,8 +843,9 @@ publish, do a quick pass over what you touched:
    or `aria-labelledby`), and their trigger gets a hook plus the standard relationship:
    `aria-controls`, `popovertarget`, `commandfor`, a `<summary>` inside `<details>`, or
    `role="tab"`. A comment left inside one that is closed then shows "Inside the '...' dialog"
-   (or popover, section, tab, menu). When an org member left the thread, the widget can also
-   offer **Open it**, which clicks that trigger; without a usable trigger it shows the hint only.
+   (or popover, section, tab, menu). When an org member left the thread (or a guest is
+   viewing their own), the widget can also offer **Open it**, which clicks that trigger and
+   scrolls to the comment; without a usable trigger it shows the hint only.
 9. **Hash routes (`/#/settings`) work, but real paths (`/settings`) are preferred.**
 10. Don't reuse one testid for two elements, and don't strip existing ones. `data-test-id`,
     `data-test`, `data-cy`, and `data-qa` work the same way if the project already uses one of
