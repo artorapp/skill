@@ -7,6 +7,43 @@ uses pre-1.0 (0.x) semver — new user-visible capability bumps MINOR, fixes/doc
 After a version bump, users pull it with `claude plugin marketplace update artor && claude plugin
 update artor@artor` (update only fires on a version bump).
 
+## [0.30.0] - 2026-10-02
+
+MINOR: one "Comments on this link" setting per public link, with new `--comments` values
+(artor-cli 0.33.0).
+
+### Changed
+
+- **Five `--comments` modes.** `artor share add` and `artor share set` take
+  `--comments off|members|anyone|name|name-email`: `off` (nobody comments through the link, org
+  members included), `members` (signed-in org members only), `anyone` (visitors too, as
+  "Anonymous guest"), `name` and `name-email` (visitors after typing a name, or a name and an
+  email). The old `anonymous` value and the `name_email` spelling are refused before anything is
+  sent ("--comments must be off, members, anyone, name, or name-email").
+- **`off` now means everyone.** The skill says that Off stops guests as well as members, and that
+  a hidden review widget stops guests at once, while a member who already has the page open can
+  keep commenting for up to an hour (use `off` to stop everyone at once).
+- **Ask who may comment.** The "Ask whether they want comments" step became "Ask who may comment":
+  nobody, only the team, or also visitors (anonymous, name, or name + email), passed explicitly
+  as `--comments`.
+- **Organization default.** A flag-less unattended `share add` keeps the org default ("Comments on
+  new links" in the dashboard, `name` unless an admin changed it); a terminal run asks "Who can
+  comment on this link?" with "Organization default (<mode>)" as the first row.
+- **Unconfirmed mode exits 1.** When an explicit `--comments` is not applied, or an older server
+  does not report the result, `share add` still prints the URL but exits 1 naming the
+  `artor share set <id> --comments <mode>` fix; the skill tells the agent to relay that instead of
+  presenting the link as configured.
+- **`share list` output.** Live lines now end with `comments: <mode>` (the `--comments` spelling)
+  instead of `guests: <mode>`; `--json` rows carry `comments` (`name_email` with an underscore) next
+  to `commentingEnabled` and `guestCommenting`.
+- **Request mapping.** "Stop guests commenting" maps to `--comments members` (the team keeps
+  commenting), "stop all comments" to `--comments off`, "let people comment" to
+  `--comments anyone|name|name-email`.
+- **Older CLIs.** Before artor-cli 0.33.0, `--comments` takes `off|anonymous|name|name-email` and
+  sets the visitor half only (`off` leaves members commenting, and a guest mode does not turn an
+  Off link's comments back on); the skill says so and points at `artor update` when the new values
+  are refused.
+
 ## [0.29.1] - 2026-10-02
 
 PATCH: the local safety checkpoint covers the files `artor publish` itself changes.
