@@ -886,6 +886,14 @@ or a subsequent version overwrite (above), turns out wrong.
   surviving only in a brand-new Artor version with no local git record.
 - If the commit itself fails (e.g. a pre-commit hook rejects it), report the failure and do
   **not** proceed to `artor publish` past it silently.
+- **Publish itself can leave files changed after that commit.** Every publish rewrites the managed
+  review-anchor block in `AGENTS.md` / `CLAUDE.md` when it changed (unless `--no-agent-notes`),
+  and with artor-cli 0.32.0+ a publish that builds may update a `"latest"` `@artorapp/web-sdk`,
+  touching `package.json` and the lockfile. After a successful publish, if `git status` shows only
+  those files, commit them **locally** too (for example
+  `git add -A && git commit -m "artor: review-anchor notes / web-sdk update"`, since publish may
+  have created `AGENTS.md`), again never pushing. They are
+  ordinary project source, and the lockfile is the one that built the published version.
 
 ## `pull` vs `remix`
 
