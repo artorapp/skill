@@ -891,7 +891,8 @@ or a subsequent version overwrite (above), turns out wrong.
   and with artor-cli 0.32.0+ a publish that builds may update a `"latest"` `@artorapp/web-sdk`,
   touching `package.json` and the lockfile. After a successful publish, if `git status` shows only
   those files, commit them **locally** too (for example
-  `git commit -am "artor: review-anchor notes / web-sdk update"`), again never pushing. They are
+  `git add -A && git commit -m "artor: review-anchor notes / web-sdk update"`, since publish may
+  have created `AGENTS.md`), again never pushing. They are
   ordinary project source, and the lockfile is the one that built the published version.
 
 ## `pull` vs `remix`
