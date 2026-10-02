@@ -1046,10 +1046,9 @@ check `artor logs` when a preview shows a crash page.
 `artor share` mints **anonymous** links — anyone with the URL can see the prototype, no Artor
 login. A link is **view-only in terms of org access** - no source pull, no remix, nothing else in
 the org - but the **prototype itself** is fully interactive for any visitor holding the link: its
-forms, API routes, and server actions run normally, exactly as for a signed-in member. **Guest
-commenting** (below) is a separate, optional toggle that only controls whether an accountless
-visitor can post through Artor's own review-comment widget (one of the link's "Comments on this
-link" choices, below) - it has no effect on whether the
+forms, API routes, and server actions run normally, exactly as for a signed-in member. Who may
+comment (below) is a separate setting (the link's "Comments on this link" choice) that only
+controls who can post through Artor's own review-comment widget - it has no effect on whether the
 prototype's own routes accept writes (those always do). Treat a shared link as a demo, not a place
 for real credentials or destructive actions: a shared prototype's own cross-site request
 protections can't be relied on inside a shared preview. This is the only way org content leaves the
@@ -1083,7 +1082,9 @@ closed garden, so treat it carefully.
   server), the CLI still prints the URL but **exits 1** with a line naming the
   `artor share set <id> --comments <mode>` fix: relay it, and don't present the link as having the
   mode you asked for. None of these modes affects the prototype's own forms, API routes or server
-  actions. While the link's review widget is hidden, nobody can comment whatever the mode says.
+  actions. While the link's review widget is hidden, guests can't comment whatever the mode says;
+  a member who already has the page open can keep commenting for up to an hour, so use `off` to
+  stop everyone at once.
   **Older CLIs** (before 0.33.0) take `--comments off|anonymous|name|name-email`, which set the
   visitor half only: there `off` stops guests but leaves members commenting, and on a link whose
   comments are Off a guest mode does not turn comments back on. If the new values come back
@@ -1215,7 +1216,7 @@ plan**, it is off by default, and it changes nothing about a link that has none.
 - "publish this as v4 labeled dark-mode" → `artor publish --label dark-mode` (the version number is
   assigned by the server; report what it returns).
 - "share the staging build" → `artor publish --alias staging` then `artor open --alias staging`.
-- "give me a public link" → ask whether guests may comment (see "Share a prototype publicly"),
+- "give me a public link" → ask who may comment (see "Share a prototype publicly"),
   then `artor share add --comments <answer>` (default follows latest), or `artor share list` to
   recopy an existing live one.
 - "stop guests commenting on that link" → `artor share set <shareId> --comments members` (the team

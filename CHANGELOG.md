@@ -21,7 +21,8 @@ MINOR: one "Comments on this link" setting per public link, with new `--comments
   email). The old `anonymous` value and the `name_email` spelling are refused before anything is
   sent ("--comments must be off, members, anyone, name, or name-email").
 - **`off` now means everyone.** The skill says that Off stops guests as well as members, and that
-  a hidden review widget stops comments whatever the mode says.
+  a hidden review widget stops guests at once, while a member who already has the page open can
+  keep commenting for up to an hour (use `off` to stop everyone at once).
 - **Ask who may comment.** The "Ask whether they want comments" step became "Ask who may comment":
   nobody, only the team, or also visitors (anonymous, name, or name + email), passed explicitly
   as `--comments`.
