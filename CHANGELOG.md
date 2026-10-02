@@ -7,6 +7,17 @@ uses pre-1.0 (0.x) semver — new user-visible capability bumps MINOR, fixes/doc
 After a version bump, users pull it with `claude plugin marketplace update artor && claude plugin
 update artor@artor` (update only fires on a version bump).
 
+## [0.29.1] - 2026-10-02
+
+PATCH: the local safety checkpoint covers the files `artor publish` itself changes.
+
+### Changed
+
+- "Local safety checkpoint before publishing" now says publish can leave files changed after the
+  pre-publish commit: the managed review-anchor block in `AGENTS.md` / `CLAUDE.md`, and (artor-cli
+  0.32.0+, on a publish that builds) `package.json` and the lockfile when it updates a `"latest"`
+  `@artorapp/web-sdk`. After a successful publish the agent commits them locally, never pushing.
+
 ## [0.29.0] - 2026-10-02
 
 MINOR: `artor publish` keeps the review widget current on its own (artor-cli 0.32.0), and the
