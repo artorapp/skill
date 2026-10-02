@@ -1101,10 +1101,12 @@ closed garden, so treat it carefully.
   or **legacy** row shows `(reshare to copy)` — those have no recoverable URL, so re-add for a fresh one.
 - **`share list` also reports each live link's comments mode.** Each human line is
   tab-separated `<shareId> <mode> <state> <views> <url or hint>`, and a **live** link appends
-  `comments: off|members|anyone|name|name-email` (the `--comments` spelling). The suffix is absent
-  on a dead (turned-off/expired) link. Use `share list --json` to parse it: each row carries
-  `comments` (raw enum, `name_email` with an underscore) next to the stored `commentingEnabled` and
-  `guestCommenting` fields. Older CLIs print `guests: off|anonymous|name|name and email` instead,
+  `comments: off|members|anyone|name|name-email` (the `--comments` spelling). A link whose review
+  widget is hidden shows `comments: off (review widget hidden)` instead, since nobody can comment on
+  it (the `share add`/`share set` confirmation reads `Off (review widget hidden)` too). The suffix is
+  absent on a dead (turned-off/expired) link. Use `share list --json` to parse it: each row carries
+  the stored `comments` (raw enum, `name_email` with an underscore) next to the stored
+  `commentingEnabled`, `guestCommenting` and `hideWidget` fields. Older CLIs print `guests: off|anonymous|name|name and email` instead,
   which describes the visitor half only.
 - **`share list` also marks password state on live links.** After the comments suffix, a live line
   appends `password` when the link asks for one, or `needs a password` when the organization
