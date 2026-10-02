@@ -367,8 +367,8 @@ Four rules hold across the whole CLI, so they are stated once here rather than r
 | --------------------------------------- | ------------------------------------------------------------ |
 | Share one fixed version                 | `artor share add --mode pinned --deployment <id> [--days N]` |
 | Share a link that follows newest        | `artor share add [--mode latest] [--days N] [--warn]`        |
-| Set guest commenting when minting        | `artor share add --comments off\|anonymous\|name\|name-email` |
-| Change a live link's guest commenting    | `artor share set <share> [--comments off\|anonymous\|name\|name-email]` |
+| Set who can comment when minting         | `artor share add --comments off\|members\|anyone\|name\|name-email` |
+| Change who can comment on a live link    | `artor share set <share> [--comments off\|members\|anyone\|name\|name-email]` |
 | Create a link with the review widget hidden | `artor share add --hide-widget`                            |
 | Protect a NEW link with a password       | `printf %s "$PW" \| artor share add --password-stdin`        |
 | Set / change a LIVE link's password      | `printf %s "$PW" \| artor share set <share> --password-stdin` |
@@ -1048,7 +1048,8 @@ login. A link is **view-only in terms of org access** - no source pull, no remix
 the org - but the **prototype itself** is fully interactive for any visitor holding the link: its
 forms, API routes, and server actions run normally, exactly as for a signed-in member. **Guest
 commenting** (below) is a separate, optional toggle that only controls whether an accountless
-visitor can post through Artor's own review-comment widget - it has no effect on whether the
+visitor can post through Artor's own review-comment widget (one of the link's "Comments on this
+link" choices, below) - it has no effect on whether the
 prototype's own routes accept writes (those always do). Treat a shared link as a demo, not a place
 for real credentials or destructive actions: a shared prototype's own cross-site request
 protections can't be relied on inside a shared preview. This is the only way org content leaves the
@@ -1063,19 +1064,30 @@ closed garden, so treat it carefully.
   with no action needed** — the old `https://share.preview.artor.app/{token}` shape now
   auto-redirects (one hop) to the new subdomain, so an existing link never needs to be re-shared
   just because of this change.
-- **Ask whether they want comments.** When a user asks for a public link and hasn't said either
-  way, ask ONE short question before minting: should visitors without an Artor account be able to
-  leave comments on it, and if so what identity — anonymous, name, or name + email? Then pass the
-  answer explicitly: `artor share add --comments off|anonymous|name|name-email` (`name` asks the
-  visitor for a name; `name-email` for a name and an email; `anonymous` posts as "Anonymous
-  guest"; `off` turns off guest commenting only - the prototype's own routes accept writes either
-  way). Without `--comments`, a non-interactive run silently keeps the org's admin-set default —
-  fine when the user says "just use the default", wrong when they had a preference you never asked
-  about. `share add` prints the mode the link ended up with; report it back alongside the URL. (On
-  an older server that predates guest commenting, the CLI prints a notice that the link is
-  view-only - relay that honestly, but don't let it imply the prototype won't work: it means no org
-  access beyond the prototype and no guest-comment feature on this link, not that the prototype's
-  own forms, API routes, or server actions are disabled.)
+- **Ask who may comment.** Every link has ONE setting, "Comments on this link", with five modes
+  (artor-cli **0.33.0+**): `off` (nobody comments through the link, org members and guests alike),
+  `members` (signed-in org members only), `anyone` (also visitors without an Artor account, posting
+  as "Anonymous guest"), `name` (visitors after typing a name), `name-email` (a name and an
+  email). When a user asks for a public link and hasn't said either way, ask ONE short question
+  before minting: who should be able to comment, nobody, only your team, or also visitors (and
+  then anonymous, name, or name + email)? Then pass the answer explicitly:
+  `artor share add --comments off|members|anyone|name|name-email`. Any other value (`anonymous`
+  and `name_email` included) exits 1 before anything is sent, with "--comments must be off,
+  members, anyone, name, or name-email". Without `--comments`, a non-interactive run silently
+  keeps the org's admin-set default (dashboard "Comments on new links", `name` unless an admin
+  changed it) - fine when the user says "just use the default", wrong when they had a preference
+  you never asked about. (A terminal run asks "Who can comment on this link?", first row
+  "Organization default (<mode>)".) `share add` prints the mode the link ended up with
+  ("Comments on this link: <Mode>. <help line>"); report it back alongside the URL. If an
+  explicit `--comments` was not applied, or the server does not report the result (an older
+  server), the CLI still prints the URL but **exits 1** with a line naming the
+  `artor share set <id> --comments <mode>` fix: relay it, and don't present the link as having the
+  mode you asked for. None of these modes affects the prototype's own forms, API routes or server
+  actions. While the link's review widget is hidden, nobody can comment whatever the mode says.
+  **Older CLIs** (before 0.33.0) take `--comments off|anonymous|name|name-email`, which set the
+  visitor half only: there `off` stops guests but leaves members commenting, and on a link whose
+  comments are Off a guest mode does not turn comments back on. If the new values come back
+  refused, run `artor update`.
 - **Guest comments are contained.** A commenting guest writes through the review widget only:
   own-threads-only visibility, self-asserted identity, no source pull, no remix, nothing else in
   the org. Guest threads show up in `artor comments` marked `guest <alias>` — filter with
@@ -1086,21 +1098,22 @@ closed garden, so treat it carefully.
   to copy it again. A **disabled** (turned-off) link shows `(off - reshare to copy)` (CLI 0.22.0
   and older print it with an em-dash, `(off — reshare to copy)` - match either); an **expired**
   or **legacy** row shows `(reshare to copy)` — those have no recoverable URL, so re-add for a fresh one.
-- **`share list` also reports each live link's guest-commenting mode.** Each human line is
+- **`share list` also reports each live link's comments mode.** Each human line is
   tab-separated `<shareId> <mode> <state> <views> <url or hint>`, and a **live** link appends
-  `guests: off|anonymous|name|name and email`. A live link with guest commenting off still prints
-  `guests: off`; the suffix is absent on a dead (turned-off/expired) link and on an older server
-  that doesn't send the field. Use `share list --json` to parse it (`guestCommenting`, raw enum
-  `name_email`).
-- **`share list` also marks password state on live links.** After the guests suffix, a live line
+  `comments: off|members|anyone|name|name-email` (the `--comments` spelling). The suffix is absent
+  on a dead (turned-off/expired) link. Use `share list --json` to parse it: each row carries
+  `comments` (raw enum, `name_email` with an underscore) next to the stored `commentingEnabled` and
+  `guestCommenting` fields. Older CLIs print `guests: off|anonymous|name|name and email` instead,
+  which describes the visitor half only.
+- **`share list` also marks password state on live links.** After the comments suffix, a live line
   appends `password` when the link asks for one, or `needs a password` when the organization
   requires a password and this link has none (that link currently opens for nobody until a
   password is added). Neither suffix appears on a dead link, where the state is inert. In
   `--json` the fields are `passwordProtected` (boolean) and `blockedByPolicy` (boolean); an older
   server omits both.
-- **Change a live link's guest commenting** with
-  `artor share set <shareId> --comments off|anonymous|name|name-email`. It edits an existing link
-  in place: same URL, same expiry, only the guest-commenting mode changes, and the CLI prints the
+- **Change who can comment on a live link** with
+  `artor share set <shareId> --comments off|members|anyone|name|name-email`. It edits an existing
+  link in place: same URL, same expiry, only the comments mode changes, and the CLI prints the
   mode the link ended up with. Pass `--comments` explicitly on any agent-driven run: without it,
   an unattended run fails loud ("--comments is required when not running interactively") rather
   than silently doing nothing, and an interactive terminal shows a picker instead (Esc cancels
@@ -1145,7 +1158,7 @@ closed garden, so treat it carefully.
 - Public previews are view-only **in terms of org access**: **no source pull, no remix, no other
   org access**, and server-only secrets never load for a public visitor. The prototype's own forms,
   API routes, and server actions work normally for any visitor holding the link (see the note
-  above); guest commenting is a separate opt-in for Artor's own comment widget only.
+  above); who may comment is a separate setting for Artor's own comment widget only.
 
 ### Link passwords
 
@@ -1205,9 +1218,10 @@ plan**, it is off by default, and it changes nothing about a link that has none.
 - "give me a public link" → ask whether guests may comment (see "Share a prototype publicly"),
   then `artor share add --comments <answer>` (default follows latest), or `artor share list` to
   recopy an existing live one.
-- "stop guests commenting on that link" / "let people comment on it" → `artor share set <shareId>
-  --comments off|anonymous|name|name-email` (get the id from `artor share list`; the link, its URL
-  and its expiry all stay as they are).
+- "stop guests commenting on that link" → `artor share set <shareId> --comments members` (the team
+  keeps commenting); "stop all comments on it" → `--comments off`; "let people comment on it" →
+  `--comments anyone|name|name-email` (get the id from `artor share list`; the link, its URL and
+  its expiry all stay as they are).
 - "put a password on that link" / "make the link private" → ask for the password (or generate one
   and show it once), then `printf '%s' "$PW" | artor share set <shareId> --password-stdin`; at mint
   time, the same pipe into `artor share add`. "Take the password off" →
