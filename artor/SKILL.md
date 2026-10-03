@@ -64,20 +64,50 @@ than paraphrasing.
 
 ## Monorepos: run per-app, from the app's own directory
 
-`artor` has **no** workspace or monorepo awareness. `artor init` and `artor publish` operate on the
-**current working directory**: they read the cwd's `package.json`, detect the framework, and build
-there. There is no app picker and no workspace scanning. Running at a monorepo/workspace root finds
-no `build` script and fails.
+`artor init` and `artor publish` operate on the **current working directory**: they read the cwd's
+`package.json`, detect the framework, and build there. There is no app picker and no workspace
+scanning: publish never enumerates `apps/*` or asks which app to ship. Running at a
+monorepo/workspace root finds no `build` script and fails.
 
 The model is **per-folder**: before `artor init` or `artor publish`, make sure the working directory
-is the specific app's directory — the one whose `package.json` has the `build` script and the
-framework dependency (e.g. `next`), **not** the workspace root. The `.artor` link is per-folder too.
+is the specific app's directory - the one whose `package.json` has the `build` script and the
+framework dependency (e.g. `next`), **not** the workspace root. The `.artor` link is per-folder too,
+so `apps/web` and `apps/admin` are two independent prototypes.
 
 - **Detect a monorepo first.** If the root `package.json` has a `workspaces` field, or a
-  `pnpm-workspace.yaml` exists, this is a workspace root, not a publishable app — do not run
+  `pnpm-workspace.yaml` exists, this is a workspace root, not a publishable app - do not run
   `init`/`publish` there.
 - **Then `cd` into the target app** (e.g. `cd apps/web`) and run `artor init`, then `artor publish`.
 - If the user hasn't said which app, ask which subfolder to publish rather than guessing.
+
+**What publish does for you from the app folder (artor-cli 0.34.0+).** The workspace root is read
+only to install and to find a Next server; it is never scanned for apps.
+
+- **Install at the workspace root.** When the app folder has no lockfile of its own and the
+  workspace lists it (`pnpm-workspace.yaml` or a `workspaces` field), missing dependencies are
+  installed at the workspace root with the workspace's package manager (its lockfile, else its
+  `packageManager` field, else pnpm for a `pnpm-workspace.yaml`), and the app builds with that same
+  manager. A folder the workspace does not list installs in its own folder, as before. `artor init`
+  installs the same way.
+- **Next.js nested standalone server.** In a workspace, Next writes the server to
+  `.next/standalone/<app path>/server.js` (e.g. `.next/standalone/apps/web/server.js`). Publish
+  finds it automatically (root `server.js` first, then the path implied by `outputFileTracingRoot`
+  or the workspace root, then a bounded search for exactly one server), copies `.next/static` and
+  `public` next to it, and boots the version with that nested entry. So plain
+  `cd apps/web && artor publish` works; the older manual recipe
+  (`--no-build --no-install --node --dir .next/standalone --entry apps/web/server.js`, with the
+  assets copied by hand) still works but is no longer needed.
+- **When the server can't be found** (none, two candidates, or the search was cut short), publish
+  stops and names the paths it checked. Fix it by setting `outputFileTracingRoot` in `next.config`
+  to the workspace root, or publish the server yourself with
+  `artor publish --node --dir .next/standalone --entry <path/to/server.js>` after copying
+  `.next/static` and `public` next to that `server.js`.
+- **`--no-install` with missing deps** stops with `this app's dependencies are not installed and
+  --no-install was set` and names the workspace root folder to run `<pm> install` in. Run that
+  install (or drop `--no-install`) and re-publish.
+- **Older CLIs (before 0.34.0)** detected the package manager from the app folder, fell back to
+  npm and failed on `workspace:*` dependencies, and looked only for `.next/standalone/server.js`.
+  If a monorepo Next publish fails that way, run `artor update` first.
 
 ## Multiple logins (accounts)
 

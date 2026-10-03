@@ -43,6 +43,11 @@ If `publish`/`init` failed to detect an app: check for a `workspaces` field in `
 `pnpm-workspace.yaml`. If present, this is a workspace root — `cd` into the specific app's folder
 (the one with the `build` script + framework dep) and retry there.
 
+From the app folder, artor-cli 0.34.0+ installs a listed workspace app's dependencies at the
+workspace root and finds a Next app's nested standalone server on its own. If a monorepo publish
+fails on `workspace:*` or on a missing `.next/standalone/server.js`, check `artor --version` and
+run `artor update` when it is older than 0.34.0.
+
 ## 5. Right org?
 
 ```bash

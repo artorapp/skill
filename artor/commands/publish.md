@@ -11,6 +11,9 @@ URL the CLI returns — never invent them. Full flag reference and semantics: th
 **Monorepo pre-check.** If the root `package.json` has a `workspaces` field or a `pnpm-workspace.yaml`
 exists, this is a workspace root — `cd` into the specific app's folder (the one with the `build`
 script + framework dep) before publishing. Ask which app if unknown. (Skill: "Monorepos" section.)
+From the app folder, artor-cli 0.34.0+ installs a listed workspace app's dependencies at the
+workspace root and finds a Next app's nested standalone server itself: no `--node --dir
+.next/standalone --entry apps/web/server.js` recipe.
 
 ```bash
 artor status

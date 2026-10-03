@@ -7,6 +7,41 @@ uses pre-1.0 (0.x) semver — new user-visible capability bumps MINOR, fixes/doc
 After a version bump, users pull it with `claude plugin marketplace update artor && claude plugin
 update artor@artor` (update only fires on a version bump).
 
+## [0.31.0] - 2026-10-02
+
+MINOR: `artor publish` works for a Next.js app inside a monorepo from the app folder (artor-cli
+0.34.0).
+
+### Changed
+
+- **"Monorepos" section rewritten.** It no longer says the CLI has no workspace or monorepo
+  awareness. The per-folder model is unchanged: still `cd` into the app, still no app picker and no
+  workspace scanning, and the workspace root is still not a publishable app. What is new is what
+  publish does from the app folder.
+- **Install at the workspace root.** A listed workspace app with no lockfile of its own now has its
+  missing dependencies installed at the workspace root with the workspace's package manager (its
+  lockfile, else its `packageManager` field, else pnpm for a `pnpm-workspace.yaml`) and builds with
+  that same manager. A folder the workspace does not list installs in its own folder, as before;
+  `artor init` installs the same way.
+- **Nested Next standalone server found automatically.** Publish locates
+  `.next/standalone/<app path>/server.js` (root `server.js` first, then the path implied by
+  `outputFileTracingRoot` or the workspace root, then a bounded search for exactly one server),
+  copies `.next/static` and `public` next to it, and boots the version with that nested entry.
+- **Manual recipe no longer needed.** The skill says the
+  `--no-build --no-install --node --dir .next/standalone --entry apps/web/server.js` route still
+  works but is not required on artor-cli 0.34.0+; plain `cd apps/web && artor publish` does the
+  same. The `/artor:publish` pre-check and `/artor:doctor` step 4 say so too.
+- **Server-not-found fixes.** When publish cannot find the server (none, two candidates, or a search
+  cut short) it names the paths checked; the skill gives the two fixes: set
+  `outputFileTracingRoot` to the workspace root, or publish the server by hand with
+  `--node --dir .next/standalone --entry <path/to/server.js>` after copying the assets.
+- **`--no-install` in a monorepo.** The skill documents the new stop message ("this app's
+  dependencies are not installed and --no-install was set", naming the workspace root to run the
+  install in) and the fix (run that install, or drop `--no-install`).
+- **Troubleshooting rows.** New rows for the standalone-server errors, the `--no-install` stop, and
+  the pre-0.34.0 symptoms (`workspace:*` / `EUNSUPPORTEDPROTOCOL` from `npm install`, or a lookup of
+  `.next/standalone/server.js` only), which point at `artor update`.
+
 ## [0.30.0] - 2026-10-02
 
 MINOR: one "Comments on this link" setting per public link, with new `--comments` values
