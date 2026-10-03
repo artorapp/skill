@@ -40,13 +40,18 @@ artor dev status
 ## 4. Monorepo / workspace root?
 
 If `publish`/`init` failed to detect an app: check for a `workspaces` field in `package.json` or a
-`pnpm-workspace.yaml`. If present, this is a workspace root — `cd` into the specific app's folder
-(the one with the `build` script + framework dep) and retry there.
+`pnpm-workspace.yaml`. If present and the root holds no detectable app, this is a workspace root:
+`cd` into the specific app's folder (the one with the `build` script + framework dep) and retry
+there.
 
-From the app folder, artor-cli 0.34.0+ installs a listed workspace app's dependencies at the
-workspace root and finds a Next app's nested standalone server on its own. If a monorepo publish
-fails on `workspace:*` or on a missing `.next/standalone/server.js`, check `artor --version` and
-run `artor update` when it is older than 0.34.0.
+With artor-cli 0.34.0 or later (check `artor --version`), a listed workspace app with no lockfile
+of its own has its dependencies installed at the workspace root, and a Next app's nested
+standalone server is found on its own for the usual layouts. If a monorepo publish fails on
+`workspace:*` or on a missing `.next/standalone/server.js`: below 0.34.0, run `artor update` and
+retry; at 0.34.0 or later, do not loop on `artor update`, check instead that the workspace lists the
+folder (`pnpm-workspace.yaml` `packages` / root `workspaces`), that the app folder has no lockfile of
+its own, and that the workspace root is not at or above the home folder with no git repository above
+the app. See the skill's "Monorepos" limits.
 
 ## 5. Right org?
 
