@@ -64,20 +64,82 @@ than paraphrasing.
 
 ## Monorepos: run per-app, from the app's own directory
 
-`artor` has **no** workspace or monorepo awareness. `artor init` and `artor publish` operate on the
-**current working directory**: they read the cwd's `package.json`, detect the framework, and build
-there. There is no app picker and no workspace scanning. Running at a monorepo/workspace root finds
-no `build` script and fails.
+`artor init` and `artor publish` operate on the **current working directory**: they read the cwd's
+`package.json`, detect the framework, and build there. There is no app picker and no workspace
+scanning: publish never enumerates `apps/*` or asks which app to ship.
 
-The model is **per-folder**: before `artor init` or `artor publish`, make sure the working directory
-is the specific app's directory — the one whose `package.json` has the `build` script and the
-framework dependency (e.g. `next`), **not** the workspace root. The `.artor` link is per-folder too.
+The model is **per-folder**: to publish a member app, make sure the working directory is that app's
+directory - the one whose `package.json` has the `build` script and the framework dependency (e.g.
+`next`). The `.artor` link is per-folder too, so `apps/web` and `apps/admin` are two independent
+prototypes.
 
-- **Detect a monorepo first.** If the root `package.json` has a `workspaces` field, or a
-  `pnpm-workspace.yaml` exists, this is a workspace root, not a publishable app — do not run
-  `init`/`publish` there.
-- **Then `cd` into the target app** (e.g. `cd apps/web`) and run `artor init`, then `artor publish`.
+- **Detect a monorepo first.** A root `package.json` with a `workspaces` field, or a
+  `pnpm-workspace.yaml`, marks a workspace root. Workspace roots usually hold orchestration rather
+  than a publishable app, and one without a detectable app usually fails with `couldn't detect a
+  framework, a build script, or an index.html`. A workspace marker alone does not prevent
+  publishing an actual app that lives at the root.
+- **For a member app, `cd` into it** (e.g. `cd apps/web`) and run `artor init`, then
+  `artor publish`.
 - If the user hasn't said which app, ask which subfolder to publish rather than guessing.
+
+**What publish does for you from the app folder (requires artor-cli 0.34.0 or later; check
+`artor --version`).** The workspace root is read only to install and to find a Next server; it is
+never scanned for apps.
+
+- **Install at the workspace root, for a listed workspace app with no lockfile of its own.** When
+  the workspace lists the app folder (`pnpm-workspace.yaml` or a `workspaces` field) and that folder
+  has no lockfile of its own, missing dependencies are installed at the workspace root with the
+  workspace's package manager (its lockfile, else its `packageManager` field, else pnpm for a
+  `pnpm-workspace.yaml`), and the app builds with that same manager. Otherwise (a folder the
+  workspace does not list, or one with its own lockfile) it installs in the app folder with that
+  folder's package manager, as before; for an unlisted folder of an npm workspace that means
+  `npm install` fails on `workspace:*` dependencies. `artor init` installs the same way.
+- **Next.js nested standalone server.** In a workspace, Next writes the server to
+  `.next/standalone/<app path>/server.js` (e.g. `.next/standalone/apps/web/server.js`). Publish
+  finds it automatically (root `server.js` first, then the path implied by `outputFileTracingRoot`
+  or the workspace root, then a bounded search for exactly one server), copies `.next/static` to
+  `.next/standalone/<app path>/.next/static` and `public` to `.next/standalone/<app path>/public`,
+  and boots the version with that nested entry. For the usual layouts plain
+  `cd apps/web && artor publish` works and the older manual recipe is unnecessary (see the limits
+  below for when it is still needed).
+- **The manual route**, when needed: build the app, then copy `.next/static` to
+  `.next/standalone/<app path>/.next/static` and `public` to `.next/standalone/<app path>/public`
+  (the folder that holds `server.js`), then
+  `artor publish --no-build --no-install --node --dir .next/standalone --entry <app path>/server.js`.
+- **Server errors.** A missing server lists the paths it checked; an ambiguous search lists the
+  candidates; a truncated search explains the search limit. These suggest setting
+  `outputFileTracingRoot` in `next.config` to the workspace root, or the manual route. An unsafe
+  server or asset path (`the Next server at .next/standalone/<path> can't be published: <reason>`)
+  is refused with the specific reason and no fix: replace that symlink with a real file or folder.
+- **`--no-install` with missing deps** stops with `... and --no-install was set. Run \`<pm> install\`
+  in the workspace root "<path>" first, then re-publish.` (the leading reason is `this app's
+  dependencies are not installed`, or the web-sdk one). Run that install, or drop `--no-install`.
+- **Limits.**
+  - Publish assumes `.next/standalone`; a custom `distDir` stops with `build finished but
+    .next/standalone is missing`. Use the manual route with `--dir <distDir>/standalone`, copying
+    `<distDir>/static` to `<server folder>/<distDir>/static` and `public` to `<server folder>/public`.
+  - The fallback search stops beyond 8 directory levels or 5000 folders (unrelated traced folders
+    count), and needs exactly one regular `server.js` beside a real `.next` folder.
+  - The entry must be a relative `.js`/`.mjs`/`.cjs` path starting with a letter or digit, using
+    only letters, digits, `.`, `_`, `-` and `/`, with no `..` segment.
+  - A symlinked server path, or a symlinked `.next`, `.next/static` or `public` beside it, is
+    refused.
+  - Native modules: listed workspace members and nested servers skip the Linux native-dependency
+    reinstall (publish prints a `monorepo app - skipping the npm native-dep reinstall` warning, which
+    is expected). Build with linux/x64 dependencies (e.g. a Linux CI build) when modules like
+    `sharp` must work in the container.
+  - Install detection ignores `NODE_PATH` and dependencies above the workspace root, and can treat
+    an OS/CPU-restricted required dependency as missing; that triggers an install or a
+    `--no-install` stop.
+  - Yarn Plug'n'Play workspace apps generally reinstall on every publish that builds.
+  - Workspace discovery stops below the home folder when there is no git repository above the app,
+    so a workspace rooted at (or above) the home folder is not detected.
+- **Troubleshooting order.** If a monorepo publish fails on `workspace:*` or only looks for
+  `.next/standalone/server.js`, check `artor --version` first. Below 0.34.0, `artor update` and
+  retry. At 0.34.0 or later, do not loop on `artor update`: check that the workspace lists the
+  folder (`pnpm-workspace.yaml` `packages` or the root `workspaces`), that the app folder has no
+  lockfile of its own, and that the workspace root is not at or above the home folder without a git
+  repository.
 
 ## Multiple logins (accounts)
 

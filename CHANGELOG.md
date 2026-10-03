@@ -7,6 +7,56 @@ uses pre-1.0 (0.x) semver — new user-visible capability bumps MINOR, fixes/doc
 After a version bump, users pull it with `claude plugin marketplace update artor && claude plugin
 update artor@artor` (update only fires on a version bump).
 
+## [0.31.0] - 2026-10-02
+
+MINOR: `artor publish` works for a Next.js app inside a monorepo from the app folder (requires
+artor-cli 0.34.0 or later; check `artor --version`).
+
+### Changed
+
+- **"Monorepos" section rewritten.** It no longer says the CLI has no workspace or monorepo
+  awareness. The per-folder model is unchanged: still `cd` into the member app, still no app picker
+  and no workspace scanning. What is new is what publish does from the app folder.
+- **Workspace roots are no longer declared unpublishable.** A workspace root usually holds
+  orchestration rather than an app, and one without a detectable app usually fails with `couldn't
+  detect a framework, a build script, or an index.html`; a workspace marker alone does not prevent
+  publishing an actual app at the root. The `/artor:publish`, `/artor:start-here` and
+  `/artor:doctor` pre-checks say the same.
+- **Install at the workspace root, for a listed workspace app with no lockfile of its own.** Its
+  missing dependencies are installed at the workspace root with the workspace's package manager
+  (its lockfile, else its `packageManager` field, else pnpm for a `pnpm-workspace.yaml`) and it
+  builds with that same manager. A folder the workspace does not list, or one with its own lockfile,
+  installs in its own folder with its own package manager, as before; `artor init` installs the
+  same way.
+- **Nested Next standalone server found automatically.** Publish locates
+  `.next/standalone/<app path>/server.js` (root `server.js` first, then the path implied by
+  `outputFileTracingRoot` or the workspace root, then a bounded search for exactly one server),
+  copies `.next/static` to `.next/standalone/<app path>/.next/static` and `public` to
+  `.next/standalone/<app path>/public`, and boots the version with that nested entry.
+- **Manual route unnecessary for usual layouts.** The skill keeps the manual route
+  (`--no-build --no-install --node --dir .next/standalone --entry <app path>/server.js`) with exact
+  copy targets, for the cases the limits list.
+- **Server error claims made exact.** A missing server lists the paths checked; an ambiguous search
+  lists the candidates; a truncated search explains the search limit; these suggest
+  `outputFileTracingRoot` or the manual route. An unsafe server or asset path is refused with the
+  specific reason and no fix: replace the symlink with a real file or folder.
+- **Limits block.** Custom `distDir` (manual route with `<distDir>/standalone`), the search caps (8
+  levels, 5000 folders, exactly one regular `server.js` beside a real `.next`), the entry rules,
+  symlink refusal, the skipped Linux native-dependency reinstall for workspace apps (its warning is
+  expected), install-detection limits (`NODE_PATH`, dependencies above the workspace root,
+  OS/CPU-restricted packages), Yarn Plug'n'Play reinstalling on every build publish, and the
+  home-folder boundary on workspace discovery.
+- **`--no-install` in a monorepo.** The skill documents the stop (``... and --no-install was set. Run
+  `<pm> install` in the workspace root "<path>" first``, led by `this app's dependencies are not
+  installed` or the web-sdk reason) and the fix (run that install, or drop `--no-install`).
+- **No `artor update` loop.** For a `workspace:*` failure or a lookup of only
+  `.next/standalone/server.js`, the skill, `/artor:doctor` and troubleshooting now say: check
+  `artor --version`; below 0.34.0 update, otherwise check workspace membership, the app's own
+  lockfile and the home-folder boundary instead of updating again.
+- **Troubleshooting rows.** New rows for the standalone-server errors, the unsafe-path refusal, the
+  custom `distDir` stop, the `--no-install` stop, and the `workspace:*` / `EUNSUPPORTEDPROTOCOL`
+  symptom.
+
 ## [0.30.0] - 2026-10-02
 
 MINOR: one "Comments on this link" setting per public link, with new `--comments` values

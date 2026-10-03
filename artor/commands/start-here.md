@@ -42,8 +42,9 @@ artor whoami      # confirms the signed-in user + active org
 ## 2. Link a project
 
 **Monorepo pre-check first.** If the root `package.json` has a `workspaces` field, or a
-`pnpm-workspace.yaml` exists, the current dir is a workspace root, not a publishable app. `cd` into
-the specific app's folder (the one whose `package.json` has the `build` script + framework dep). If
+`pnpm-workspace.yaml` exists, the current dir is a workspace root, which usually holds orchestration
+rather than an app. To publish a member app, `cd` into its folder (the one whose `package.json` has
+the `build` script + framework dep); an actual app at the root can still publish from there. If
 you don't know which app, ask before continuing. (See the artor skill's "Monorepos" section.)
 
 - If `.artor/project.json` already exists, this dir is linked — skip to step 3.

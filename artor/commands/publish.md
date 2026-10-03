@@ -9,8 +9,12 @@ URL the CLI returns — never invent them. Full flag reference and semantics: th
 ## 1. Preconditions
 
 **Monorepo pre-check.** If the root `package.json` has a `workspaces` field or a `pnpm-workspace.yaml`
-exists, this is a workspace root — `cd` into the specific app's folder (the one with the `build`
-script + framework dep) before publishing. Ask which app if unknown. (Skill: "Monorepos" section.)
+exists, this is a workspace root, which usually holds orchestration rather than an app. To publish a
+member app, `cd` into its folder (the one with the `build` script + framework dep) first; an actual
+app at the root can still publish from there. Ask which app if unknown. (Skill: "Monorepos" section.)
+With artor-cli 0.34.0 or later (check `artor --version`), a listed workspace app with no lockfile
+of its own installs at the workspace root, and a Next app's nested standalone server is found on its
+own: the manual recipe is unnecessary for usual layouts; see the skill's "Monorepos" limits.
 
 ```bash
 artor status
