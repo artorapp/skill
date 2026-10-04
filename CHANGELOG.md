@@ -7,6 +7,53 @@ uses pre-1.0 (0.x) semver — new user-visible capability bumps MINOR, fixes/doc
 After a version bump, users pull it with `claude plugin marketplace update artor && claude plugin
 update artor@artor` (update only fires on a version bump).
 
+## [0.32.0] - 2026-10-04
+
+MINOR: a retried publish is safe inside one run, and the skill says what to do when a publish may
+already be live (requires artor-cli 0.35.0 or later; check `artor --version`).
+
+### Added
+
+- **"A publish that lost its reply" note in Publishing notes.** artor-cli 0.35.0 sends one publish
+  key per run. A lost finalize reply (a dropped connection, a proxy's 502/503/504) is asked again
+  with the same key up to 2 times, and the run waits while the server says to (the first attempt
+  still running, a server-side conflict, or a 429 whose `Retry-After` fits in the 5 minute wait
+  budget). A retry inside the run never makes a second version.
+- **`replayed: true` in `artor publish --json`.** Documented in the top `--json` summary, the
+  Publishing notes and `/artor:publish`: it means an earlier attempt of the same run had already
+  made the version live, and no second version was made. Its `url` is the requested alias's (or
+  `latest`'s) only while that alias still points at the replayed version, else the version's own
+  URL; `aliases` lists only the aliases still pointing at it. Report them as returned.
+- **Check before publishing again.** After a failure that says the version "may already be live"
+  (no confirmation, a Ctrl-C while the server was finishing, or "still processing"), the skill
+  forbids a blind re-run, since a new run is a new key and can publish the same build twice. It
+  compares the prototype's latest version in `artor project list --json` (or `artor project search
+  <name> --json`) with the number before the publish, reports the version if it moved, and
+  otherwise asks the user to check the version list in the dashboard. `/artor:publish` now reads
+  that number before publishing.
+- **Refusal codes explained.** `publish_in_progress` (the CLI waits; if the run ends on it, wait
+  a few minutes and check the versions), `publish_conflict` (transient, nothing went live,
+  publishing again is safe), `publish_superseded` and `publish_failed_superseded` (nothing was
+  republished: report, check the versions, ask before a new publish), `publish_key_reused` (a
+  client bug, report it).
+- **Which 429s are waited out.** Only a 429 whose `Retry-After` ends within what is left of the 5
+  minute wait budget (the org's in-flight publish slot, or a short rate-limit window); each wait is
+  at most 30 s. A 429 with no `Retry-After`, or with a longer one (a spent publish budget), fails
+  at once with the server's message: relay it and publish later. New troubleshooting row.
+- **426 after a lost attempt.** The CLI no longer self-updates and re-runs the publish there; the
+  skill says to run `artor update` and do the version check before any new publish.
+- **Server crash mid-publish.** Just publish again; the stuck attempt is never served, deleting
+  it answers `version_busy` until it is cleaned up, and a stuck overwrite target is down until it
+  is overwritten again.
+- **Troubleshooting rows** for each of the new publish messages and codes.
+
+### Notes
+
+- Older CLIs send no key and never retry; older servers that do not honor the key get no retry
+  either. Below 0.35.0 the skill still says to check the versions after an unclear publish failure.
+- artor-cli 0.34.2 added `proxyAvailable` to `artor registry list --json` rows; the skill does not
+  document `registry list --json`, so nothing changed there.
+
 ## [0.31.0] - 2026-10-02
 
 MINOR: `artor publish` works for a Next.js app inside a monorepo from the app folder (requires

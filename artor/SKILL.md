@@ -16,8 +16,9 @@ workflows you'll drive most. **Prefer `--json` on read commands** (artor-cli ≥
 It prints the payload to stdout and suppresses the human rendering. Two **write** commands emit
 `--json` too: `artor publish` (one object - `version`, `url`, `aliases`, `artifactType`, `usage`
 (`null` against an older server), `webSdk` (artor-cli 0.32.0+: `{ status, declared, from?, to? }`,
-the review widget auto-update outcome), plus `replaced` when the server reports it - with every progress line on
-stderr) and `artor init`
+the review widget auto-update outcome), plus `replaced` when the server reports it and `replayed: true`
+(artor-cli 0.35.0+) when the version came from an earlier attempt of the same run - with every
+progress line on stderr) and `artor init`
 (`projectId`, `slug`, `name`, `orgId`, plus `spaceId`/`folderId` when it chose them). Under
 `--json` those two never prompt: it is a scripted run by contract, so a multi-org `init` needs
 `--org`, and a `next.config` patch or a mock-drift conflict fails loud asking for `--yes` /
@@ -623,12 +624,71 @@ works identically; a deck is just a project whose `kind` is `"slides"` instead o
 - **`artor publish --json` is the agent-facing form.** It emits exactly one JSON object on stdout:
   `{ version, url, aliases, artifactType, usage, webSdk }` (`usage` is `null` against an older
   server; `webSdk`, artor-cli 0.32.0+, is the review widget auto-update outcome, see below), plus `replaced` when the
-  server reports an overwrite. It routes every progress line,
+  server reports an overwrite, and `replayed: true` (artor-cli 0.35.0+) when an earlier attempt of
+  the same run had already made the version live (no second version was made; report that version
+  as the result). It routes every progress line,
   warning, smoke-test result, and the build/install subprocess transcript to stderr, so the payload
   stays parseable. It **never prompts**: the
   first-publish confirm takes its informational path, while a `next.config`
   patch fails loud asking for `--yes` and a real mock conflict fails loud asking for
   `--mocks=local|server`. Read `version` and `url` from the object rather than parsing prose.
+- **A publish that lost its reply (artor-cli 0.35.0+; check `artor --version`).** A finalize can
+  make the version live and still fail on the wire (a dropped connection, a proxy's 502/503/504).
+  The CLI now sends one publish key per run and retries that same run safely: a lost reply is asked
+  again up to 2 times (after 2 s, then 5 s), and while the server says to wait (`publish_in_progress`:
+  the first attempt still running; `publish_conflict`: a server-side conflict; or a 429 whose
+  `Retry-After` ends within what is left of the 5 minute wait budget: the org's in-flight publish
+  slot, or a short rate-limit window) it waits, each wait at most 30 s and at most 5 minutes of real
+  time per run, the requests in between included. A 429 with no `Retry-After`, or with a longer one
+  (a spent publish budget), is never waited on and fails at once with the server's message:
+  relay it and publish again later (if an earlier attempt of the run lost its reply, the "may
+  already be live" rule below applies first). A retry inside the run never makes a second version:
+  if the earlier attempt went live, the run returns that version (`replayed: true` in `--json`, "an
+  earlier attempt of this publish had already gone live; no second version made" on stderr). Its
+  `url` is the requested alias's (or `latest`'s) only while that alias still points at the replayed
+  version; once someone published after the lost attempt, `url` is that version's own URL, so it
+  never names the newer version. `aliases` likewise lists only the aliases that still point at it.
+  Report `version`, `url` and `aliases` as returned.
+  What the agent must do:
+  - **Never blindly re-run `artor publish` after a failure that says the version "may already be
+    live"** (`The server did not confirm the publish. It may already be live: check the
+    prototype's versions in the Artor dashboard before publishing again.`, the Ctrl-C variant
+    `Publish interrupted while the server was finishing it. ...`, or `The server is still
+    processing this publish. Check the prototype's versions ... in a few minutes before publishing
+    again.`). A new `artor publish` is a new key, so it can publish the same build as a second
+    version. Check first: `artor project list --json` (or `artor project search <name> --json`)
+    shows the prototype's latest version; compare it with the number before this publish (`artor
+    open --json` then gives its URL). If it moved, the publish went live: report that version and
+    stop. If it did not, or you cannot tell, ask the user to check the prototype's version list in
+    the dashboard before publishing again. For "still processing", wait a few minutes before
+    checking.
+  - A **426 after a lost attempt** does not self-update and re-run (that re-run could publish a
+    second version): it prints the warning above, then ``This server now needs a newer CLI: run
+    `artor update` before publishing again.``. Run `artor update`, then do the version check above
+    before any new publish.
+  - **Refusals the server can give the run** (a final outcome unless noted):
+    - `publish_in_progress`: the first attempt is still running. The CLI waits it out itself; if
+      the run ends on it, wait a few minutes, then do the version check.
+    - `publish_conflict`: a transient server-side conflict before anything went live. The CLI
+      retries it; if the run still ends on it, publishing again is safe.
+    - `publish_superseded` (`This publish already went live, but that version was changed or
+      deleted afterwards. Nothing was republished.`) and `publish_failed_superseded` (`This publish
+      did not go live, and that version was changed afterwards. Nothing was republished.`):
+      nothing was published by this run's retry. Do not re-run automatically; check the versions,
+      report what the CLI said, and ask the user whether a new publish is wanted.
+    - `publish_key_reused`: the same key arrived with a different bundle, a client bug (the CLI
+      never does this). Report it; do not try to work around it.
+  - An error the Artor server answered itself (a JSON error body, even a 500 or 503) is final and
+    is not retried; it does not mean the version may be live unless an earlier attempt of the same
+    run was lost (then the CLI says so once).
+  - **A server crash in the middle of a publish:** just publish again; the new publish works. The
+    crashed attempt can be left as a version stuck in progress, which is never served; deleting it
+    answers `version_busy` until it is cleaned up. The same run waits up to 5 minutes for it, then
+    prints the "still processing" line above. A stuck overwrite target is down (a version in
+    progress is not served) until it is overwritten again.
+  - Older CLIs send no key and never retry; older servers that do not support the key get no
+    retry either. Below 0.35.0, after an unclear publish failure (it often surfaced right after the
+    "uploading source" step), still check the versions before publishing again.
 - It auto-detects the framework: Next/SSR → **node-server** (static AND dynamic/API routes),
   pure-static frameworks (Vite, CRA, Astro, Angular, ...) → **static**. Force with `--static` /
   `--node`; pass `--dir <path>` for a non-standard output dir, `--entry <file>` for a node-server's
