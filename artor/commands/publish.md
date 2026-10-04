@@ -110,7 +110,8 @@ version at `-V`. Write `--alias`; if both are passed, `--alias` wins.
 
 **`--json` for a scripted run.** `artor publish --json` prints one object on stdout
 (`{ version, url, aliases, artifactType, usage }`, `usage` being `null` against an older
-server, plus `replaced` on an overwrite) and puts every
+server, plus `replaced` on an overwrite, and `replayed: true` (artor-cli 0.35.0+) when an earlier
+attempt of the same run had already made the version live) and puts every
 progress line, warning, and build subprocess transcript on stderr. It never prompts: a
 `next.config` patch fails loud asking for `--yes`, a real mock conflict fails loud asking for
 `--mocks=local|server`. Read `version`/`url` from the object rather than parsing prose.
@@ -120,12 +121,25 @@ listen. If it crashes, publish stops with the crash output. **Read it and fix th
 `--no-smoke` **only** if the app legitimately needs live secrets/services to boot — never as a reflex
 to get past a real crash.
 
+**Publish failed but "may already be live"? Do not re-run blindly** (artor-cli 0.35.0+). Inside one
+run the CLI retries a lost reply with the same publish key and never makes a second version; a NEW
+`artor publish` is a new key and can. When the failure says the version may already be live, or
+that the server is still processing it, check first: `artor project list --json` (or `artor project
+search <name> --json`) for the prototype's latest version, compared with the number before this
+publish (read it from the same listing before you publish, so you have it). Moved: it went live, report that version (`artor open --json` for the URL). Not moved, or
+unsure: ask the user to check the version list in the dashboard. `publish_superseded` /
+`publish_failed_superseded` mean nothing was republished: report and ask before publishing again.
+`publish_conflict` that ends the run, or a server crash mid-publish: publishing again is safe.
+Details: the skill's "A publish that lost its reply" note.
+
 **Web-sdk update prompt.** If publish asks about updating `@artorapp/web-sdk` (the review widget),
 recommend accepting it — see the skill's "Publishing notes" for why.
 
 ## 6. Report
 
-State the assigned version number, the preview URL, and any aliases moved — exactly as printed. The
+State the assigned version number, the preview URL, and any aliases moved, exactly as printed. If
+the result was `replayed: true`, say an earlier attempt of the same publish had already gone live and
+no second version was made. The
 URL is **members-only**. A new version is immutable; an overwritten one (step 3) replaces the
 previous content at that alias permanently — say clearly which happened. To expose this version
 publicly, use `/artor:share`.
