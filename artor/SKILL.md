@@ -635,16 +635,20 @@ works identically; a deck is just a project whose `kind` is `"slides"` instead o
 - **A publish that lost its reply (artor-cli 0.35.0+; check `artor --version`).** A finalize can
   make the version live and still fail on the wire (a dropped connection, a proxy's 502/503/504).
   The CLI now sends one publish key per run and retries that same run safely: a lost reply is asked
-  again up to 2 times, and while the server says to wait (the first attempt still running, a
-  server-side conflict, or a 429 whose `Retry-After` ends within the wait budget: the org's publish
-  slot busy, or a short rate-limit window) it waits, for up to 5 minutes per run. A 429 with no
-  `Retry-After`, or a longer one (a spent publish budget), fails at once with the server's message:
+  again up to 2 times (after 2 s, then 5 s), and while the server says to wait (`publish_in_progress`:
+  the first attempt still running; `publish_conflict`: a server-side conflict; or a 429 whose
+  `Retry-After` ends within what is left of the 5 minute wait budget: the org's in-flight publish
+  slot, or a short rate-limit window) it waits, each wait at most 30 s and at most 5 minutes of real
+  time per run, the requests in between included. A 429 with no `Retry-After`, or with a longer one
+  (a spent publish budget), is never waited on and fails at once with the server's message:
   relay it and publish again later (if an earlier attempt of the run lost its reply, the "may
   already be live" rule below applies first). A retry inside the run never makes a second version:
   if the earlier attempt went live, the run returns that version (`replayed: true` in `--json`, "an
   earlier attempt of this publish had already gone live; no second version made" on stderr). Its
-  `url` is the alias URL only while the alias still points at that version; if someone published
-  after the lost attempt, `url` is that version's own URL. Report `version` and `url` as returned.
+  `url` is the requested alias's (or `latest`'s) only while that alias still points at the replayed
+  version; once someone published after the lost attempt, `url` is that version's own URL, so it
+  never names the newer version. `aliases` likewise lists only the aliases that still point at it.
+  Report `version`, `url` and `aliases` as returned.
   What the agent must do:
   - **Never blindly re-run `artor publish` after a failure that says the version "may already be
     live"** (`The server did not confirm the publish. It may already be live: check the
@@ -679,7 +683,9 @@ works identically; a deck is just a project whose `kind` is `"slides"` instead o
     run was lost (then the CLI says so once).
   - **A server crash in the middle of a publish:** just publish again; the new publish works. The
     crashed attempt can be left as a version stuck in progress, which is never served; deleting it
-    answers `version_busy` until it is cleaned up.
+    answers `version_busy` until it is cleaned up. The same run waits up to 5 minutes for it, then
+    prints the "still processing" line above. A stuck overwrite target is down (a version in
+    progress is not served) until it is overwritten again.
   - Older CLIs send no key and never retry; older servers that do not support the key get no
     retry either. Below 0.35.0, after an unclear publish failure (it often surfaced right after the
     "uploading source" step), still check the versions before publishing again.

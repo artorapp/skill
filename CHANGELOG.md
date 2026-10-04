@@ -21,8 +21,9 @@ already be live (requires artor-cli 0.35.0 or later; check `artor --version`).
   budget). A retry inside the run never makes a second version.
 - **`replayed: true` in `artor publish --json`.** Documented in the top `--json` summary, the
   Publishing notes and `/artor:publish`: it means an earlier attempt of the same run had already
-  made the version live, and no second version was made. Its `url` is the alias URL only while the
-  alias still points at that version, else the version's own URL; report both as returned.
+  made the version live, and no second version was made. Its `url` is the requested alias's (or
+  `latest`'s) only while that alias still points at the replayed version, else the version's own
+  URL; `aliases` lists only the aliases still pointing at it. Report them as returned.
 - **Check before publishing again.** After a failure that says the version "may already be live"
   (no confirmation, a Ctrl-C while the server was finishing, or "still processing"), the skill
   forbids a blind re-run, since a new run is a new key and can publish the same build twice. It
@@ -35,12 +36,15 @@ already be live (requires artor-cli 0.35.0 or later; check `artor --version`).
   publishing again is safe), `publish_superseded` and `publish_failed_superseded` (nothing was
   republished: report, check the versions, ask before a new publish), `publish_key_reused` (a
   client bug, report it).
-- **A 429 that is not waited out.** A 429 with no `Retry-After`, or with a longer one (a spent
-  publish budget), fails at once with the server's message: relay it and publish later.
+- **Which 429s are waited out.** Only a 429 whose `Retry-After` ends within what is left of the 5
+  minute wait budget (the org's in-flight publish slot, or a short rate-limit window); each wait is
+  at most 30 s. A 429 with no `Retry-After`, or with a longer one (a spent publish budget), fails
+  at once with the server's message: relay it and publish later. New troubleshooting row.
 - **426 after a lost attempt.** The CLI no longer self-updates and re-runs the publish there; the
   skill says to run `artor update` and do the version check before any new publish.
-- **Server crash mid-publish.** Just publish again; the stuck attempt is never served, and
-  deleting it answers `version_busy` until it is cleaned up.
+- **Server crash mid-publish.** Just publish again; the stuck attempt is never served, deleting
+  it answers `version_busy` until it is cleaned up, and a stuck overwrite target is down until it
+  is overwritten again.
 - **Troubleshooting rows** for each of the new publish messages and codes.
 
 ### Notes

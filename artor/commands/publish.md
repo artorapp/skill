@@ -129,7 +129,10 @@ search <name> --json`) for the prototype's latest version, compared with the num
 publish (read it from the same listing before you publish, so you have it). Moved: it went live, report that version (`artor open --json` for the URL). Not moved, or
 unsure: ask the user to check the version list in the dashboard. `publish_superseded` /
 `publish_failed_superseded` mean nothing was republished: report and ask before publishing again.
-`publish_conflict` that ends the run, or a server crash mid-publish: publishing again is safe.
+`publish_conflict` that ends the run, or a server crash mid-publish: publishing again is safe. A
+429 the run did not wait out (no `Retry-After`, or one longer than what is left of the 5 minute wait
+budget, such as a spent publish budget) fails at once with the server's message: relay it and
+publish later (after the version check, if the run also lost a reply).
 Details: the skill's "A publish that lost its reply" note.
 
 **Web-sdk update prompt.** If publish asks about updating `@artorapp/web-sdk` (the review widget),
@@ -139,7 +142,8 @@ recommend accepting it — see the skill's "Publishing notes" for why.
 
 State the assigned version number, the preview URL, and any aliases moved, exactly as printed. If
 the result was `replayed: true`, say an earlier attempt of the same publish had already gone live and
-no second version was made. The
+no second version was made; report its `url` as returned (it is the version's own URL, not the
+alias's, when someone published after the lost attempt). The
 URL is **members-only**. A new version is immutable; an overwritten one (step 3) replaces the
 previous content at that alias permanently — say clearly which happened. To expose this version
 publicly, use `/artor:share`.
